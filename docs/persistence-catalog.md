@@ -83,9 +83,43 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 }[T]
 ```
 
-Sources: [`packages/core/session/src/types.ts:404`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:412`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:434`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:465`](../packages/core/session/src/types.ts)
+Sources: [`packages/core/session/src/types.ts:426`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:434`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:456`](../packages/core/session/src/types.ts) · [`packages/core/session/src/types.ts:487`](../packages/core/session/src/types.ts)
 
 ## Events
+
+### `advisor/*`
+
+<a id="advisorinvocation--log-only"></a>
+
+#### `advisor/invocation` — log-only
+
+```ts persistence-catalog
+/**
+ * One advisor consultation: route, caller token cap, outcome, and returned
+ * guidance. It is log-only and adds no model-visible input.
+ */
+'advisor/invocation': {
+  /** The exact provider/model route consulted. */
+  provider: string
+  model: string
+  /** Adapter-owned reasoning effort requested for this route, when any. */
+  reasoningEffort?: string
+  /** The output-token cap the caller applied. */
+  maxTokens: number
+  /** Whether the consultation produced guidance. */
+  outcome: 'completed' | 'failed'
+  /** Advisor-reported token usage, when the adapter reported any. */
+  usage?: TokenUsage
+  /** The guidance blocks, present only on a completed consultation. */
+  guidance?: ContentBlock[]
+  /** Safe failure detail, present only on a failed consultation. */
+  error?: string
+}
+```
+
+Types: [ContentBlock](subsystems/core.md) · [TokenUsage](subsystems/llm-streaming.md)
+
+Source: [`packages/core/session/src/types.ts:406`](../packages/core/session/src/types.ts)
 
 ### `agent/*`
 
@@ -210,7 +244,7 @@ Source: [`packages/interaction/user-approval/src/index.ts:33`](../packages/inter
 'assistant/attempt': { turn: number; step: number; stream: AssistantStreamRecord[] }
 ```
 
-Source: [`packages/core/session/src/types.ts:335`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:336`](../packages/core/session/src/types.ts)
 
 <a id="assistantmessage--surface"></a>
 
@@ -240,7 +274,7 @@ Source: [`packages/core/session/src/types.ts:335`](../packages/core/session/src/
 
 Types: [TokenUsage](subsystems/llm-streaming.md)
 
-Source: [`packages/core/session/src/types.ts:321`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:322`](../packages/core/session/src/types.ts)
 
 ### `command/*`
 
@@ -605,7 +639,7 @@ Source: [`packages/plan/plan-mode/src/index.ts:47`](../packages/plan/plan-mode/s
 'request/context': RequestContext
 ```
 
-Source: [`packages/core/session/src/types.ts:377`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:378`](../packages/core/session/src/types.ts)
 
 <a id="requestheader--log-only"></a>
 
@@ -624,7 +658,7 @@ Source: [`packages/core/session/src/types.ts:377`](../packages/core/session/src/
 }
 ```
 
-Source: [`packages/core/session/src/types.ts:365`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:366`](../packages/core/session/src/types.ts)
 
 ### `sandbox/*`
 
@@ -699,7 +733,7 @@ Source: [`packages/schedule/schedule/src/types.ts:219`](../packages/schedule/sch
 'session/end-seed': { inherited?: true }
 ```
 
-Source: [`packages/core/session/src/types.ts:400`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:401`](../packages/core/session/src/types.ts)
 
 <a id="sessiontitle--log-only"></a>
 
@@ -761,7 +795,7 @@ Source: [`packages/session/session-log-deepseek/src/types.ts:81`](../packages/se
 'step/end': { turn: number; step: number }
 ```
 
-Source: [`packages/core/session/src/types.ts:289`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:290`](../packages/core/session/src/types.ts)
 
 <a id="stepstart--log-only"></a>
 
@@ -772,7 +806,7 @@ Source: [`packages/core/session/src/types.ts:289`](../packages/core/session/src/
 'step/start': { turn: number; step: number }
 ```
 
-Source: [`packages/core/session/src/types.ts:287`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:288`](../packages/core/session/src/types.ts)
 
 ### `subagent/*`
 
@@ -848,7 +882,7 @@ Source: [`packages/subagent/tool-subagent/src/model-selection-state.ts:17`](../p
 'system/message': { turn: number; step: number; message: SystemMessage }
 ```
 
-Source: [`packages/core/session/src/types.ts:310`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:311`](../packages/core/session/src/types.ts)
 
 ### `team/*`
 
@@ -941,7 +975,7 @@ Source: [`packages/todo/tool-todo/src/types.ts:31`](../packages/todo/tool-todo/s
 
 Types: [ToolCallId](subsystems/core.md)
 
-Source: [`packages/core/session/src/types.ts:341`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:342`](../packages/core/session/src/types.ts)
 
 <a id="toolptc-dispatch--log-only"></a>
 
@@ -1017,7 +1051,7 @@ Source: [`packages/core/tools/src/types.ts:40`](../packages/core/tools/src/types
 }
 ```
 
-Source: [`packages/core/session/src/types.ts:353`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:354`](../packages/core/session/src/types.ts)
 
 ### `tool-workflow/*`
 
@@ -1097,7 +1131,7 @@ Source: [`packages/workflow/tool-workflow/src/types.ts:47`](../packages/workflow
 
 Types: [TurnEndReason](subsystems/session.md)
 
-Source: [`packages/core/session/src/types.ts:285`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:286`](../packages/core/session/src/types.ts)
 
 <a id="turnstart--log-only"></a>
 
@@ -1113,7 +1147,7 @@ Source: [`packages/core/session/src/types.ts:285`](../packages/core/session/src/
 'turn/start': { turn: number }
 ```
 
-Source: [`packages/core/session/src/types.ts:276`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:277`](../packages/core/session/src/types.ts)
 
 ### `user/*`
 
@@ -1132,7 +1166,7 @@ Source: [`packages/core/session/src/types.ts:276`](../packages/core/session/src/
 'user/message': UserMessage
 ```
 
-Source: [`packages/core/session/src/types.ts:297`](../packages/core/session/src/types.ts)
+Source: [`packages/core/session/src/types.ts:298`](../packages/core/session/src/types.ts)
 
 ### `web/*`
 
