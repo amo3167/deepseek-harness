@@ -141,6 +141,8 @@ These limits follow from keeping consultation configuration outside the model-fa
 - **Text-only rendering** — only advisor text blocks reach the calling model as the tool result; provider and model stay in the structured tool result, usage stays on the invocation event, and none of that metadata is rendered as guidance.
 - **Prompt guidance is optional, not enforcement** — disabling the prompt section leaves the tool registered, and an enabled section cannot force the model to consult at the recommended decision points.
 
+No runtime invariant companion is published because the tool has no independently observable relationship beyond its guarded registration and one advisor-service call.
+
 <a id="dev-note"></a>
 ### Dev Note
 

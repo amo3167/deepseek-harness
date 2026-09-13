@@ -89,6 +89,40 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 
 ## 事件
 
+### `advisor/*`
+
+<a id="advisorinvocation--log-only"></a>
+
+#### `advisor/invocation` — log-only
+
+```ts persistence-catalog
+/**
+ * One advisor consultation: route, caller token cap, outcome, and returned
+ * guidance. It is log-only and adds no model-visible input.
+ */
+'advisor/invocation': {
+  /** The exact provider/model route consulted. */
+  provider: string
+  model: string
+  /** Adapter-owned reasoning effort requested for this route, when any. */
+  reasoningEffort?: string
+  /** The output-token cap the caller applied. */
+  maxTokens: number
+  /** Whether the consultation produced guidance. */
+  outcome: 'completed' | 'failed'
+  /** Advisor-reported token usage, when the adapter reported any. */
+  usage?: TokenUsage
+  /** The guidance blocks, present only on a completed consultation. */
+  guidance?: ContentBlock[]
+  /** Safe failure detail, present only on a failed consultation. */
+  error?: string
+}
+```
+
+类型：[ContentBlock](subsystems/core.zh.md) · [TokenUsage](subsystems/llm-streaming.zh.md)
+
+来源：[`packages/core/session/src/types.ts:406`](../packages/core/session/src/types.ts)
+
 ### `agent/*`
 
 <a id="agentinboxspliced--log-only"></a>

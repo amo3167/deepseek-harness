@@ -36,6 +36,7 @@ Every package lives in exactly one group; new packages join existing groups, and
 | [`feedback/`](feedback/README.md) | Human feedback capture and command |
 | [`identity/`](identity/README.md) | Shared anonymous identity |
 | [`llm/`](llm/README.md) | LLM capability family: abstract service + provider adapters |
+| [`advisor/`](advisor/README.md) | Advisor consultations over an agent's live conversation and the model-facing advisor tool |
 | [`e2b/`](e2b/README.md) | E2B remote-runtime providers |
 | [`subprocess/`](subprocess/README.md) | Subprocess capability family: Service Definition + local process-tree provider |
 | [`shell/`](shell/README.md) | Bash capability family: executor seam, local impl, model-facing tools |

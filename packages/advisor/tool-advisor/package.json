@@ -1,8 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-tool-advisor",
   "description": "Model-facing advisor consultation tool over the ctx.advisors seam",
-  "version": "0.1.5-rc.1",
-  "private": true,
+  "version": "0.1.5-rc.2",
   "publishConfig": {
     "access": "public"
   },

@@ -35,6 +35,30 @@ export interface AcpConfig {
 
 来源：[`packages/acp/acp/src/index.ts:75`](../packages/acp/acp/src/index.ts)
 
+<a id="deepseek-aidsh-advisor"></a>
+
+## `@deepseek-ai/dsh-advisor`
+
+需要：`llm`
+
+```ts config-catalog
+/** Configuration for advisor consultations. */
+export interface Config {
+  /** Registered provider route for the advisor model. */
+  provider: string
+  /** Provider-owned exact model id. */
+  model: string
+  /** Adapter-owned reasoning effort for the advisor route. */
+  reasoningEffort?: string
+  /** Output-token cap for one consultation. */
+  maxTokens?: number
+  /** System instruction placed in the conversation's system slot. */
+  instruction?: string
+}
+```
+
+来源：[`packages/advisor/advisor/src/index.ts:36`](../packages/advisor/advisor/src/index.ts)
+
 <a id="deepseek-aidsh-agent-default-model"></a>
 
 ## `@deepseek-ai/dsh-agent-default-model`
@@ -2707,6 +2731,24 @@ export type TokenMeterConfig = Record<string, never>
 ```
 
 来源：[`packages/llm/token-meter/src/types.ts:13`](../packages/llm/token-meter/src/types.ts)
+
+<a id="deepseek-aidsh-tool-advisor"></a>
+
+## `@deepseek-ai/dsh-tool-advisor`
+
+需要：`tools` · `advisors` · `systemPrompt`
+
+```ts config-catalog
+/** Configuration for the advisor tool. */
+export interface Config {
+  /** Model-facing tool name. Each loaded instance must use a distinct name. */
+  toolName?: string
+  /** Whether to register the prompt section that explains advisor use. */
+  promptSection?: boolean
+}
+```
+
+来源：[`packages/advisor/tool-advisor/src/index.ts:20`](../packages/advisor/tool-advisor/src/index.ts)
 
 <a id="deepseek-aidsh-tool-bash"></a>
 

@@ -1,8 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-advisor",
   "description": "Advisor capability: consults a configured second model over the live conversation",
-  "version": "0.1.5-rc.1",
-  "private": true,
+  "version": "0.1.5-rc.2",
   "publishConfig": {
     "access": "public"
   },

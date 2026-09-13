@@ -125,6 +125,14 @@ const SERVICE_ROLES: ServiceRole[] = [
     note: 'Adapters register provider implementations; the loop and compaction call the provider-neutral stream service.',
   },
   {
+    key: 'advisors',
+    pkg: 'advisor',
+    title: 'Advisor consultation service',
+    mode: 'core',
+    consumers: ['tool-advisor'],
+    note: 'Builds an auxiliary request from the calling agent conversation, resolves its configured LLM route, and writes one audit record for each completed or failed consultation.',
+  },
+  {
     key: 'deepseekLlmApiExtensions',
     pkg: 'deepseek-llm-api-extensions',
     title: 'Official DeepSeek request extensions',

@@ -148,6 +148,8 @@ These limits define when a consultation cannot provide cheap or independently ve
 - **Full conversation in every request** — the service keeps no state between consultations; a provider may reuse a prior advisor-request prefix on the same route, but a cross-vendor route cannot reuse the parent's route cache.
 - **Text guidance only** — non-text output does not become guidance; an empty text result and token-cap truncation fail the consultation instead of returning a partial answer.
 
+No runtime invariant companion is published because no independently observable advisor relationship can diverge from the consultation service's own route resolution and append operation.
+
 <a id="dev-note"></a>
 ### Dev Note
 
