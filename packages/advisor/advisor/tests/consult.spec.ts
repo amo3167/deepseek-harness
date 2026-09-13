@@ -40,6 +40,20 @@ describe('AdvisorService.consult', () => {
     expect(result.route).toEqual({ provider: 'test', model: 'advisor-model' })
   })
 
+  it('applies default instruction and token cap during direct construction', async () => {
+    const adapter = new ScriptedLlmAdapter({ kind: 'text', text: 'guidance' })
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    const service = new AdvisorService(ctx, { provider: 'test', model: 'advisor-model' })
+    ctx.effect(() => ctx.llm.registerAdapter(['test'], adapter))
+    await service.consult({ agent: agentWithSession(), signal: new AbortController().signal })
+    expect(adapter.seen[0]?.maxTokens).toBe(8192)
+    expect(adapter.seen[0]?.messages[0]?.content).toEqual([{
+      type: 'text',
+      text: 'You are now acting as an advisor to the assistant whose conversation appears above.\nThe assistant stopped to consult you at a decision point: it may be choosing an approach,\nrepeating a failing action, or about to declare work complete.\n\nGive direct, specific guidance the assistant can act on immediately: what to do next, what\nit has misjudged, and what evidence in the conversation supports your reading. Name files,\ncommands, identifiers, and error strings exactly as they appear. Prefer the smallest correct\nnext action over a plan.\n\nYou are a read-only reviewer. You cannot run commands, read files, or change anything, and\nyou must not claim to have done so. Reason only from the transcript above; when the\ntranscript does not settle a question, say what the assistant should check rather than\nguessing. If the conversation already exceeds what you can judge reliably, say so plainly\ninstead of inventing confidence.',
+    }])
+  })
+
   it('sends no system field, tools, or stop sequences', async () => {
     const adapter = new ScriptedLlmAdapter({ kind: 'text', text: 'guidance' })
     const ctx = await setup(adapter)
@@ -96,12 +110,14 @@ describe('AdvisorService.consult', () => {
   })
 
   it('fails closed on aborted or truncated output', async () => {
-    for (const [outcome, message] of [
-      [{ kind: 'aborted', message: 'cancelled upstream', code: 'CANCELLED' }, 'cancelled upstream'],
-      [{ kind: 'max-tokens' }, 'truncated at its token cap'],
+    for (const [outcome, message, error] of [
+      [{ kind: 'aborted', message: 'cancelled upstream', code: 'CANCELLED' }, 'cancelled upstream', 'cancelled upstream'],
+      [{ kind: 'max-tokens' }, 'truncated at its token cap', 'the advisor was truncated at its token cap (incomplete guidance)'],
     ] as const) {
       const ctx = await setup(new ScriptedLlmAdapter(outcome))
-      await expect(ctx.advisors.consult({ agent: agentWithSession(), signal: new AbortController().signal })).rejects.toThrow(message)
+      const agent = agentWithSession()
+      await expect(ctx.advisors.consult({ agent, signal: new AbortController().signal })).rejects.toThrow(message)
+      expect(invocationEvents(agent)[0]?.data).toMatchObject({ outcome: 'failed', error })
     }
   })
 
@@ -111,8 +127,12 @@ describe('AdvisorService.consult', () => {
       { kind: 'reasoning', text: 'internal thought' },
     ] as const) {
       const ctx = await setup(new ScriptedLlmAdapter(outcome))
-      await expect(ctx.advisors.consult({ agent: agentWithSession(), signal: new AbortController().signal }))
+      const agent = agentWithSession()
+      await expect(ctx.advisors.consult({ agent, signal: new AbortController().signal }))
         .rejects.toThrow('the advisor produced no guidance')
+      expect(invocationEvents(agent)[0]?.data).toMatchObject({
+        outcome: 'failed', error: 'the advisor produced no guidance',
+      })
     }
   })
 
@@ -154,7 +174,9 @@ describe('AdvisorService.consult', () => {
 
   it('uses the optional agent default-model route when its advisor route is empty', async () => {
     const ctx = new Context()
-    ctx.provide('agentDefaultModel', { currentSelection: () => ({ provider: 'test', model: 'fallback-model' }) } as never)
+    ctx.provide('agentDefaultModel', {
+      currentSelection: () => ({ provider: 'test', model: 'fallback-model', reasoningEffort: 'low' }),
+    } as never)
     await ctx.plugin(LlmRuntime)
     await ctx.plugin(AdvisorService, { provider: '', model: '' })
     ctx.effect(() => ctx.llm.registerAdapter(['test'], new ScriptedLlmAdapter({ kind: 'text', text: 'guidance' })))

@@ -68,8 +68,8 @@ export class AdvisorService extends Service {
   /** @param ctx - service context. @param config - validated advisor configuration. */
   constructor(ctx: Context, config: Config) {
     super(ctx, 'advisors')
-    this.maxTokens = config.maxTokens as number
-    this.instruction = config.instruction as string
+    this.maxTokens = config.maxTokens ?? 8192
+    this.instruction = config.instruction ?? DEFAULT_ADVISOR_INSTRUCTION
     const entry: AdvisorConfigOptions = {
       provider: config.provider,
       model: config.model,
@@ -96,7 +96,8 @@ export class AdvisorService extends Service {
       return { provider: current.provider, model: current.model }
     }
     const fallback = this.ctx.get('agentDefaultModel') as { currentSelection(): AdvisorRoute } | undefined
-    return fallback?.currentSelection()
+    const selection = fallback?.currentSelection()
+    return selection === undefined ? undefined : { provider: selection.provider, model: selection.model }
   }
 
   /**
