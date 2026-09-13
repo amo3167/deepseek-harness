@@ -10,11 +10,12 @@ import FileSettingsProvider from '@deepseek-ai/dsh-settings-file'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { describe, expect, it } from 'vitest'
+import { ADVISOR_PROMPT_SECTION } from '../src/description.ts'
 import * as tool from '../src/index.ts'
 import { ScriptedLlmAdapter } from './scripted-adapter.ts'
 
 /** Mount the real tool stack around one scripted advisor route. */
-async function setup() {
+async function setup(config: tool.Config = {}) {
   const ctx = new Context()
   await ctx.plugin(LlmRuntime)
   await ctx.plugin(SystemPrompt)
@@ -22,8 +23,8 @@ async function setup() {
   await ctx.plugin(FileSettingsProvider, { path: join(tmpdir(), `${randomUUID()}-tool-advisor.yaml`), watch: false })
   await ctx.plugin(AdvisorService, { provider: 'test', model: 'advisor-model' })
   ctx.llm.registerAdapter(['test'], new ScriptedLlmAdapter({ kind: 'text', text: 'prefer the smaller refactor' }))
-  await ctx.plugin(tool)
-  return ctx
+  const fiber = await ctx.plugin(tool, config)
+  return { ctx, fiber }
 }
 
 /** One agent over a session holding a single user message. @param id - Session id. */
@@ -38,7 +39,7 @@ function agentWithSession(id: string): Agent {
 
 describe('tool-advisor', () => {
   it('registers a parameter-free advisor tool', async () => {
-    const ctx = await setup()
+    const { ctx } = await setup()
     const advisor = ctx.tools.schemas().find(schema => schema.name === 'advisor')
     expect(advisor).toBeDefined()
     const parameters = advisor?.parameters as { properties?: Record<string, unknown> } | undefined
@@ -46,7 +47,7 @@ describe('tool-advisor', () => {
   })
 
   it('returns advisor guidance as tool result content', async () => {
-    const ctx = await setup()
+    const { ctx } = await setup()
     const result = await ctx.tools.execute({
       signal: new AbortController().signal,
       callId: ToolCallId('tool-call-1'),
@@ -59,5 +60,41 @@ describe('tool-advisor', () => {
       .map(block => block.text)
       .join('')
     expect(text).toContain('prefer the smaller refactor')
+  })
+
+  it('registers the default prompt section at the allocated advisor order', async () => {
+    const { ctx } = await setup()
+    expect(ctx.systemPrompt.getSectionOrder('TOOL_ADVISOR')).toBe(2850)
+    expect((await ctx.systemPrompt.assemble()).sections).toContainEqual({
+      name: 'tool:advisor',
+      text: ADVISOR_PROMPT_SECTION,
+    })
+  })
+
+  it('uses a configured name for both the tool and its prompt section', async () => {
+    const { ctx } = await setup({ toolName: 'consult' })
+    expect(ctx.tools.schemas().some(schema => schema.name === 'consult')).toBe(true)
+    expect(ctx.tools.schemas().some(schema => schema.name === 'advisor')).toBe(false)
+    expect((await ctx.systemPrompt.assemble()).sections).toContainEqual({
+      name: 'tool:consult',
+      text: ADVISOR_PROMPT_SECTION,
+    })
+  })
+
+  it('omits the prompt section when configured not to register it', async () => {
+    const { ctx } = await setup({ promptSection: false })
+    expect(ctx.tools.schemas().some(schema => schema.name === 'advisor')).toBe(true)
+    expect((await ctx.systemPrompt.assemble()).sections.some(section => section.name === 'tool:advisor')).toBe(false)
+  })
+
+  it('removes its tool and prompt registrations when its fiber is disposed', async () => {
+    const { ctx, fiber } = await setup()
+    expect(ctx.tools.schemas().some(schema => schema.name === 'advisor')).toBe(true)
+    expect((await ctx.systemPrompt.assemble()).sections.some(section => section.name === 'tool:advisor')).toBe(true)
+
+    await fiber.dispose()
+
+    expect(ctx.tools.schemas().some(schema => schema.name === 'advisor')).toBe(false)
+    expect((await ctx.systemPrompt.assemble()).sections.some(section => section.name === 'tool:advisor')).toBe(false)
   })
 })

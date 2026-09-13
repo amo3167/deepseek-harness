@@ -64,7 +64,7 @@ export function apply(ctx: Context, config: Config = {}): void {
       },
       render: (_args, value) => [{
         type: 'text',
-        text: outputValueText(value.guidance as unknown as JsonValue[]),
+        text: outputValueText(value.guidance),
       }],
     },
     isConcurrencySafe: () => true,
