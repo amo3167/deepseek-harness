@@ -62,7 +62,7 @@ The model calls the tool with an empty object. The executor passes the calling a
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The plugin registers one concurrency-safe tool under `toolName`. Its input schema is the empty object. Execution delegates to `ctx.advisors`, then concatenates the returned text blocks for model-facing rendering; the advisor service owns route resolution, streaming, validation, and durable invocation logging.
+The plugin registers one concurrency-safe tool under `toolName`. Its input schema is the empty object. Execution delegates to `ctx.advisors`, then concatenates the returned text blocks for model-facing rendering; the advisor service owns route resolution, request construction and provider-cache behavior, streaming, validation, and durable invocation logging.
 
 When `promptSection` is enabled, the plugin also registers `ADVISOR_PROMPT_SECTION` at the `TOOL_ADVISOR` system-prompt order. Both registrations belong to the plugin lifecycle and unwind with it. Those registrations and the injected services keep every mutable relationship under an existing owner, so this package publishes no runtime invariant companion.
 

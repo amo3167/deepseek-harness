@@ -62,7 +62,7 @@ kind: "package-reference"
 <details>
 <summary>实现细节——点击展开</summary>
 
-插件以 `toolName` 注册一个并发安全工具。其输入 schema 是空对象。执行委托给 `ctx.advisors`，随后拼接返回的文本块供模型侧渲染；顾问服务拥有路由解析、流式传输、校验和持久调用日志记录。
+插件以 `toolName` 注册一个并发安全工具。其输入 schema 是空对象。执行委托给 `ctx.advisors`，随后拼接返回的文本块供模型侧渲染；顾问服务拥有路由解析、请求构造与提供方缓存行为、流式传输、校验和持久调用日志记录。
 
 启用 `promptSection` 后，插件还会在 `TOOL_ADVISOR` 系统提示词顺序位置注册 `ADVISOR_PROMPT_SECTION`。两项注册都属于插件生命周期并随之撤销。这些注册与注入服务让每项可变关系都有现有所有者，因此本包不发布运行时不变式配套包。
 

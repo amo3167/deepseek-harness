@@ -68,7 +68,7 @@ Every completed or failed dispatch appends one log-only `advisor/invocation` ses
 
 The service resolves one route before each call. The live settings layer overrides the composition entry; an incomplete live route delegates to the optional `agentDefaultModel` selection. Reasoning effort follows the resolved settings or composition route only when that same route supplied it.
 
-`buildAdvisorPrefix()` derives a fresh message-array snapshot from the calling session. `withAdvisorInstruction()` preserves the leading system text, appends two newlines and the advisor instruction inside that message, and leaves the remaining message objects in their original order. This construction keeps the parent's system text as the request prefix while giving the advisor the complete conversation that follows it.
+`buildAdvisorPrefix()` derives a fresh message-array snapshot from the calling session. `withAdvisorInstruction()` preserves the leading system text, appends two newlines and the advisor instruction inside that message, and leaves the remaining message objects in their original order. The unchanged initial system-text tokens can remain a request prefix, but the inserted instruction precedes the conversation and prevents the later message suffix from reusing the parent's prefix cache.
 
 The service streams directly through `ctx.llm` with purpose `advisor`, assembles the response, and keeps only non-blank text blocks. It creates no Agent, tools, or cross-call state. Its lifecycle-owned service registration is the only mutable relationship, so the package publishes no separate runtime invariant companion; the `advisor/invocation` record remains observable in the session log.
 
@@ -131,11 +131,11 @@ instead of inventing confidence.
 
 #### Token effect
 
-Each consultation pays for one full conversation replay plus the advisor instruction and generated guidance. The service keeps no reusable consultation state, so every later consultation pays for another replay.
+Each consultation sends one full conversation replay plus the advisor instruction and generated guidance. The service keeps no reusable consultation state; billable input can still be lower when the selected provider reuses a prefix from a prior advisor request.
 
 #### KV Cache effect
 
-The advisor request is a genuine prefix of the parent's last routed request: it shares the parent's cache when the advisor route matches the parent route, and otherwise shares only the unchanged conversation suffix with the advisor route's own cache. A cross-vendor advisor reuses no prefix cache and therefore pays the full conversation input cost on every consultation.
+Inserting the advisor instruction changes the leading system message. When the advisor route matches the parent route, only unchanged initial system-text tokens may reuse the parent-route prefix cache; no later conversation suffix can reuse it because the instruction appears first. Repeated advisor calls on the same route may reuse their own prior advisor-request prefix when the provider supports and retains that cache. A cross-vendor advisor cannot reuse the parent route's cache.
 
 ## Known Limitations and Deferred Work
 
@@ -145,7 +145,7 @@ These limits define when a consultation cannot provide cheap or independently ve
 
 - **Transcript-only review** — the advisor receives derived conversation messages but no tools or separate file access, so it can recommend checks but cannot perform them.
 - **One configured route per consultation** — callers cannot choose a model in `consult()`; live advisor settings, the composition entry, and the optional default-model fallback own route selection.
-- **Full replay on every call** — the service keeps no state between consultations, and a cross-vendor route cannot reuse the parent's prefix cache.
+- **Full conversation in every request** — the service keeps no state between consultations; a provider may reuse a prior advisor-request prefix on the same route, but a cross-vendor route cannot reuse the parent's route cache.
 - **Text guidance only** — non-text output does not become guidance; an empty text result and token-cap truncation fail the consultation instead of returning a partial answer.
 
 <a id="dev-note"></a>
