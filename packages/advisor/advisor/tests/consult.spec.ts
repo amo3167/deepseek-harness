@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import LlmRuntime from '@deepseek-ai/dsh-llm'
+import LlmRuntime, { LlmAdapter } from '@deepseek-ai/dsh-llm'
+import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
 import FileSettingsProvider from '@deepseek-ai/dsh-settings-file'
 import { describe, expect, it, vi } from 'vitest'
 import AdvisorService from '../src/index.ts'
@@ -11,7 +12,7 @@ import { appendUser, emptySession } from './fixtures.ts'
 import { ScriptedLlmAdapter } from './scripted-adapter.ts'
 
 /** Mount one advisor service with its runtime dependencies. */
-async function setup(adapter: ScriptedLlmAdapter, config?: Partial<{ provider: string; model: string }>): Promise<Context> {
+async function setup(adapter: LlmAdapter, config?: Partial<{ provider: string; model: string }>): Promise<Context> {
   const ctx = new Context()
   await ctx.plugin(LlmRuntime)
   await ctx.plugin(FileSettingsProvider, { path: join(tmpdir(), `${randomUUID()}-advisor-settings.yaml`), watch: false })
@@ -30,6 +31,30 @@ function agentWithSession(): Agent {
 /** Return the advisor audit records in one agent session. */
 function invocationEvents(agent: Agent) {
   return agent.session.snapshotEvents().filter(event => event.type === 'advisor/invocation')
+}
+
+/** Adapter that waits for cancellation after the consultation receives one chunk. */
+class MidStreamAbortAdapter extends LlmAdapter {
+  /** Resolves after the consumer has received the first output chunk. */
+  readonly firstChunk: Promise<void>
+  private resolveFirstChunk!: () => void
+
+  constructor() {
+    super()
+    this.firstChunk = new Promise<void>((resolve) => { this.resolveFirstChunk = resolve })
+  }
+
+  override stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
+    const resolveFirstChunk = this.resolveFirstChunk
+    return (async function* (): AsyncIterable<StreamChunk> {
+      yield { type: 'text-delta', index: 0, text: 'partial guidance' }
+      resolveFirstChunk()
+      await new Promise<void>((resolve) => {
+        options.signal?.addEventListener('abort', () => { resolve() }, { once: true })
+      })
+      throw new Error('cancelled after first chunk')
+    })()
+  }
 }
 
 describe('AdvisorService.consult', () => {
@@ -93,6 +118,18 @@ describe('AdvisorService.consult', () => {
     expect(invocationEvents(agent)[0]?.data).toMatchObject({ outcome: 'failed', error: 'upstream exploded' })
   })
 
+  it('records a failed invocation when cancellation arrives mid-stream', async () => {
+    const controller = new AbortController()
+    const adapter = new MidStreamAbortAdapter()
+    const ctx = await setup(adapter)
+    const agent = agentWithSession()
+    const consultation = ctx.advisors.consult({ agent, signal: controller.signal })
+    await adapter.firstChunk
+    controller.abort()
+    await expect(consultation).rejects.toThrow('cancelled after first chunk')
+    expect(invocationEvents(agent)[0]?.data).toMatchObject({ outcome: 'failed' })
+  })
+
   it('records and rethrows a thrown non-Error adapter failure', async () => {
     const ctx = await setup(new ScriptedLlmAdapter({ kind: 'text', text: 'unused' }))
     vi.spyOn(ctx.llm, 'stream').mockImplementation(() => { throw 'transport unavailable' })
@@ -134,6 +171,14 @@ describe('AdvisorService.consult', () => {
         outcome: 'failed', error: 'the advisor produced no guidance',
       })
     }
+  })
+
+  it('fails closed when the adapter emits no text blocks', async () => {
+    const ctx = await setup(new ScriptedLlmAdapter({ kind: 'empty' }))
+    const agent = agentWithSession()
+    await expect(ctx.advisors.consult({ agent, signal: new AbortController().signal }))
+      .rejects.toMatchObject({ code: 'ADVISOR_EMPTY_OUTPUT' })
+    expect(invocationEvents(agent)[0]?.data).toMatchObject({ outcome: 'failed' })
   })
 
   it('uses a configured reasoning effort for the matching route', async () => {

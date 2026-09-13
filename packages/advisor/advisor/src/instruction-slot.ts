@@ -1,6 +1,7 @@
 /**
  * Placement of the advisor instruction in a conversation's own system
- * message, preserving the parent request's cacheable prefix.
+ * message. The changed message means the complete request is not a pure
+ * prefix of the parent request.
  *
  * @module @deepseek-ai/dsh-advisor/instruction-slot
  */

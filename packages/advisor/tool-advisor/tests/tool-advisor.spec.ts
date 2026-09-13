@@ -44,6 +44,7 @@ describe('tool-advisor', () => {
     expect(advisor).toBeDefined()
     const parameters = advisor?.parameters as { properties?: Record<string, unknown> } | undefined
     expect(Object.keys(parameters?.properties ?? {})).toEqual([])
+    expect(ctx.tools.get('advisor')?.isConcurrencySafe?.({})).toBe(true)
   })
 
   it('returns advisor guidance as tool result content', async () => {
@@ -60,6 +61,19 @@ describe('tool-advisor', () => {
       .map(block => block.text)
       .join('')
     expect(text).toContain('prefer the smaller refactor')
+  })
+
+  it('rejects execution without a calling agent', async () => {
+    const { ctx } = await setup()
+    await expect(ctx.tools.execute({
+      signal: new AbortController().signal,
+      callId: ToolCallId('tool-call-without-agent'),
+      name: 'advisor',
+      arguments: {},
+    })).resolves.toMatchObject({
+      isError: true,
+      error: { message: 'the advisor tool requires a calling agent (exec.agent was undefined)' },
+    })
   })
 
   it('registers the default prompt section at the allocated advisor order', async () => {

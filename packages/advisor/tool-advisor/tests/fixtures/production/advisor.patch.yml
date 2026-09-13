@@ -1,0 +1,27 @@
+# Test-only patch over the shipped headless profile. The base bundle retains its
+# advisor route, while this fixture supplies its registered keyless adapter.
+- id: headless-startup
+  disabled: true
+
+- id: headless-runner
+  disabled: true
+
+- id: llm-deepseek
+  disabled: true
+
+- id: agent-loop
+  config:
+    agents:
+      - id: main
+        provider: advisor-main
+        model: advisor-main
+        cwd: !!js process.cwd()
+
+- id: session-persistence-jsonl
+  config:
+    root: './.sessions'
+    compression: none
+
+- insert:
+    - id: advisor-composition-mock-llm
+      name: './advisor-mock-llm.ts'

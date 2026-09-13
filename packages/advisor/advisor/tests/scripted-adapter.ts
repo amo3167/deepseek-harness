@@ -7,6 +7,7 @@ import type { GenerateOptions, StreamChunk, TokenUsage } from '@deepseek-ai/dsh-
 /** One scripted successful answer or terminal adapter failure. */
 export type ScriptedOutcome =
   | { readonly kind: 'text'; readonly text: string; readonly usage?: TokenUsage }
+  | { readonly kind: 'empty' }
   | { readonly kind: 'reasoning'; readonly text: string }
   | { readonly kind: 'error'; readonly message: string; readonly code: string }
   | { readonly kind: 'aborted'; readonly message: string; readonly code: string }
@@ -51,6 +52,10 @@ export class ScriptedLlmAdapter extends LlmAdapter {
       }
       if (outcome.kind === 'reasoning') {
         yield { type: 'reasoning-delta', index: 0, text: outcome.text }
+        yield { type: 'finish', reason: { kind: 'stop' } }
+        return
+      }
+      if (outcome.kind === 'empty') {
         yield { type: 'finish', reason: { kind: 'stop' } }
         return
       }
