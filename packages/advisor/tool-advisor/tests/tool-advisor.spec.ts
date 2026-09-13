@@ -1,0 +1,63 @@
+import { randomUUID } from 'node:crypto'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { Context } from '@deepseek-ai/cordis'
+import type { Agent } from '@deepseek-ai/dsh-agent'
+import AdvisorService from '@deepseek-ai/dsh-advisor'
+import LlmRuntime, { createUserMessage, ToolCallId } from '@deepseek-ai/dsh-llm'
+import { Session, SessionId } from '@deepseek-ai/dsh-session'
+import FileSettingsProvider from '@deepseek-ai/dsh-settings-file'
+import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
+import ToolRuntime from '@deepseek-ai/dsh-tools'
+import { describe, expect, it } from 'vitest'
+import * as tool from '../src/index.ts'
+import { ScriptedLlmAdapter } from './scripted-adapter.ts'
+
+/** Mount the real tool stack around one scripted advisor route. */
+async function setup() {
+  const ctx = new Context()
+  await ctx.plugin(LlmRuntime)
+  await ctx.plugin(SystemPrompt)
+  await ctx.plugin(ToolRuntime)
+  await ctx.plugin(FileSettingsProvider, { path: join(tmpdir(), `${randomUUID()}-tool-advisor.yaml`), watch: false })
+  await ctx.plugin(AdvisorService, { provider: 'test', model: 'advisor-model' })
+  ctx.llm.registerAdapter(['test'], new ScriptedLlmAdapter({ kind: 'text', text: 'prefer the smaller refactor' }))
+  await ctx.plugin(tool)
+  return ctx
+}
+
+/** One agent over a session holding a single user message. @param id - Session id. */
+function agentWithSession(id: string): Agent {
+  const session = Session.create(SessionId(id))
+  session.append('user/message', createUserMessage({
+    content: [{ type: 'text', text: 'do the work' }],
+    source: { kind: 'plugin', plugin: 'advisor-test' },
+  }), { surfaceOp: 'append' })
+  return { id: session.id, options: {}, session } as unknown as Agent
+}
+
+describe('tool-advisor', () => {
+  it('registers a parameter-free advisor tool', async () => {
+    const ctx = await setup()
+    const advisor = ctx.tools.schemas().find(schema => schema.name === 'advisor')
+    expect(advisor).toBeDefined()
+    const parameters = advisor?.parameters as { properties?: Record<string, unknown> } | undefined
+    expect(Object.keys(parameters?.properties ?? {})).toEqual([])
+  })
+
+  it('returns advisor guidance as tool result content', async () => {
+    const ctx = await setup()
+    const result = await ctx.tools.execute({
+      signal: new AbortController().signal,
+      callId: ToolCallId('tool-call-1'),
+      name: 'advisor',
+      arguments: {},
+      agent: agentWithSession('tool-exec'),
+    })
+    const text = result.content
+      .filter((block): block is { type: 'text'; text: string } => block.type === 'text')
+      .map(block => block.text)
+      .join('')
+    expect(text).toContain('prefer the smaller refactor')
+  })
+})

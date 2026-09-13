@@ -278,6 +278,7 @@
     { "path": "./packages/compaction/compaction" },
     { "path": "./packages/compaction/compaction-basic" },
     { "path": "./packages/advisor/advisor" },
+    { "path": "./packages/advisor/tool-advisor" },
     { "path": "./packages/compaction/command-compact" },
     { "path": "./packages/compaction/compaction-tool-result-pruner" },
     { "path": "./packages/web/web" },
