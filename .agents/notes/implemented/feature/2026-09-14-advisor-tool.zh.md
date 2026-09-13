@@ -32,7 +32,7 @@ Status: implemented
 
 ## Testing
 
-聚焦的顾问和 bundle 测试覆盖路由预检、adapter 失败、第一段流式输出后的取消、空输出、持久化失败结果、bundle 行和依赖声明。已发布 headless 子进程 smoke 使用无密钥 adapter 启动真实 Loader profile，执行 `advisor` 工具调用，记录 `advisor/invocation`，并将指导返回给调用 Agent。
+聚焦的顾问和 bundle 测试覆盖路由预检、adapter 失败、第一段流式输出后的取消、空输出、持久化失败结果、bundle 行和依赖声明。`llm-mock-server` 不提供客户端在第一段流式输出后取消的场景，因此该取消路径使用 `MidStreamAbortAdapter`。已发布 headless 子进程 smoke 使用无密钥 adapter 启动真实 Loader profile，执行 `advisor` 工具调用，记录 `advisor/invocation`，并将指导返回给调用 Agent。
 
 Task 3 的内存组合检查不满足产品可见插件的包策略；本次变更添加真实 Loader/app-process 覆盖。Task 5 记录了两个与顾问代码无关但仍存在的 Windows symlink gate 阻碍：`verify-node-next-types` 在 TypeScript 前因 `symlinkSync` 报告 `EPERM: operation not permitted` 而失败；Git mode `120000` 的 `apps/cli/tests/profiles/acp/cordis.yml` 被物化为字面目标 `../../../../../snapshots/acp/escalation-approved/cordis.yml`，使 `verify-cordis-config` 报告 YAML 根不是 entry array。当前 verifier 运行复现了后一诊断。不会修改 checkout symlink 路径以隐藏任一环境失败。
 

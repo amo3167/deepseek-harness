@@ -32,7 +32,7 @@ Capability ranking is deferred because the current consumers provide no evidence
 
 ## Testing
 
-Focused advisor and bundle tests cover route preflight, adapter failure, cancellation after the first streamed chunk, empty output, durable failed outcomes, bundle rows, and dependency declarations. The shipped-headless subprocess smoke boots the real Loader profile with a keyless adapter, performs an `advisor` tool call, records `advisor/invocation`, and returns the guidance to the calling agent.
+Focused advisor and bundle tests cover route preflight, adapter failure, cancellation after the first streamed chunk, empty output, durable failed outcomes, bundle rows, and dependency declarations. `llm-mock-server` does not model a client abort after the first streamed chunk, so `MidStreamAbortAdapter` supplies that cancellation path. The shipped-headless subprocess smoke boots the real Loader profile with a keyless adapter, performs an `advisor` tool call, records `advisor/invocation`, and returns the guidance to the calling agent.
 
 Task 3's in-memory composition check did not meet the package policy for product-visible plugins; this change adds the real Loader/app-process coverage. Task 5 recorded two Windows symlink gate blockers that remain unrelated to advisor code: `verify-node-next-types` fails before TypeScript when `symlinkSync` reports `EPERM: operation not permitted`, and Git mode `120000` for `apps/cli/tests/profiles/acp/cordis.yml` is materialized as the literal target `../../../../../snapshots/acp/escalation-approved/cordis.yml`, making `verify-cordis-config` report that its YAML root is not an entry array. The current verifier run reproduced the latter diagnostic. No checkout symlink path is changed to hide either environment failure.
 
