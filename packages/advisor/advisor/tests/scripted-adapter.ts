@@ -7,11 +7,11 @@ import type { GenerateOptions, StreamChunk, TokenUsage } from '@deepseek-ai/dsh-
 /** One scripted successful answer or terminal adapter failure. */
 export type ScriptedOutcome =
   | { readonly kind: 'text'; readonly text: string; readonly usage?: TokenUsage }
-  | { readonly kind: 'empty' }
+  | { readonly kind: 'empty'; readonly usage?: TokenUsage }
   | { readonly kind: 'reasoning'; readonly text: string }
-  | { readonly kind: 'error'; readonly message: string; readonly code: string }
-  | { readonly kind: 'aborted'; readonly message: string; readonly code: string }
-  | { readonly kind: 'max-tokens' }
+  | { readonly kind: 'error'; readonly message: string; readonly code: string; readonly usage?: TokenUsage }
+  | { readonly kind: 'aborted'; readonly message: string; readonly code: string; readonly usage?: TokenUsage }
+  | { readonly kind: 'max-tokens'; readonly usage?: TokenUsage }
 
 /** Captures requests while providing a deterministic LLM stream. */
 export class ScriptedLlmAdapter extends LlmAdapter {
@@ -39,14 +39,17 @@ export class ScriptedLlmAdapter extends LlmAdapter {
     const outcome = this.outcome
     return (async function* (): AsyncIterable<StreamChunk> {
       if (outcome.kind === 'error') {
+        if (outcome.usage !== undefined) yield { type: 'usage', usage: outcome.usage }
         yield { type: 'finish', reason: { kind: 'error', failure: { message: outcome.message, code: outcome.code } } }
         return
       }
       if (outcome.kind === 'aborted') {
+        if (outcome.usage !== undefined) yield { type: 'usage', usage: outcome.usage }
         yield { type: 'finish', reason: { kind: 'aborted', failure: { message: outcome.message, code: outcome.code } } }
         return
       }
       if (outcome.kind === 'max-tokens') {
+        if (outcome.usage !== undefined) yield { type: 'usage', usage: outcome.usage }
         yield { type: 'finish', reason: { kind: 'max-tokens' } }
         return
       }
@@ -56,6 +59,7 @@ export class ScriptedLlmAdapter extends LlmAdapter {
         return
       }
       if (outcome.kind === 'empty') {
+        if (outcome.usage !== undefined) yield { type: 'usage', usage: outcome.usage }
         yield { type: 'finish', reason: { kind: 'stop' } }
         return
       }

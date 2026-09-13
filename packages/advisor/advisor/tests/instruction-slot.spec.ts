@@ -36,6 +36,19 @@ describe('withAdvisorInstruction', () => {
     expect(result[0]?.content).toEqual([{ type: 'text', text: 'ADVISE' }])
   })
 
+  it('extends the latest system message when history has multiple effective prompts', () => {
+    const messages = [
+      createMessage({ role: 'system', content: [{ type: 'text', text: 'EARLIER PROMPT' }], source: { kind: 'plugin', plugin: 'test' } }),
+      createMessage({ role: 'user', content: [{ type: 'text', text: 'work' }], source: { kind: 'plugin', plugin: 'test' } }),
+      createMessage({ role: 'system', content: [{ type: 'text', text: 'LATEST EFFECTIVE PROMPT' }], source: { kind: 'plugin', plugin: 'test' } }),
+    ]
+
+    const result = withAdvisorInstruction(messages, 'ADVISE')
+
+    expect((result[0]?.content[0] as { text: string }).text).toBe('EARLIER PROMPT')
+    expect((result[2]?.content[0] as { text: string }).text).toBe('LATEST EFFECTIVE PROMPT\n\nADVISE')
+  })
+
   it('returns at most one system message for a real derived conversation', () => {
     const session = emptySession('slot-real')
     appendUser(session, 'work')

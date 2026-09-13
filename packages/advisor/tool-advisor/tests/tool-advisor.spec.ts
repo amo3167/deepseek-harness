@@ -7,6 +7,8 @@ import AdvisorService from '@deepseek-ai/dsh-advisor'
 import LlmRuntime, { createUserMessage, ToolCallId } from '@deepseek-ai/dsh-llm'
 import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import FileSettingsProvider from '@deepseek-ai/dsh-settings-file'
+import { createScope, scopeOf } from '@deepseek-ai/dsh-scope'
+import type { Scope } from '@deepseek-ai/dsh-scope'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { describe, expect, it } from 'vitest'
@@ -89,10 +91,22 @@ describe('tool-advisor', () => {
     const { ctx } = await setup({ toolName: 'consult' })
     expect(ctx.tools.schemas().some(schema => schema.name === 'consult')).toBe(true)
     expect(ctx.tools.schemas().some(schema => schema.name === 'advisor')).toBe(false)
-    expect((await ctx.systemPrompt.assemble()).sections).toContainEqual({
-      name: 'tool:consult',
-      text: ADVISOR_PROMPT_SECTION,
-    })
+    const prompt = (await ctx.systemPrompt.assemble()).sections.find(section => section.name === 'tool:consult')?.text
+    expect(prompt).toContain('consult')
+    expect(prompt).not.toContain('advisor tool')
+  })
+
+  it('hides its prompt section when the requesting scope cannot see the tool', async () => {
+    const { ctx } = await setup({ toolName: 'consult' })
+    let scope!: Scope
+    await ctx.plugin(Object.assign((inner: Context) => { scope = createScope(inner, { name: 'hidden-advisor' }) }, {
+      inject: ['tools', 'systemPrompt'],
+    }))
+    const key = scopeOf(scope.ctx)!
+    scope.ctx.tools.restrict({ deny: ['consult'] })
+
+    expect(ctx.tools.get('consult', key)).toBeUndefined()
+    expect((await ctx.systemPrompt.assemble({ scope: key })).sections.find(section => section.name === 'tool:consult')?.text).toBe('')
   })
 
   it('omits the prompt section when configured not to register it', async () => {

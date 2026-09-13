@@ -3,12 +3,14 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
+import { DeepSeekAdapter, resolveAdapterOptions } from '@deepseek-ai/dsh-llm-deepseek'
 import LlmRuntime, { LlmAdapter } from '@deepseek-ai/dsh-llm'
 import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
+import { startMockLlmServer } from '@deepseek-ai/dsh-llm-mock-server'
 import FileSettingsProvider from '@deepseek-ai/dsh-settings-file'
 import { describe, expect, it, vi } from 'vitest'
 import AdvisorService from '../src/index.ts'
-import { appendUser, emptySession } from './fixtures.ts'
+import { appendAdvisorCall, appendUser, emptySession } from './fixtures.ts'
 import { ScriptedLlmAdapter } from './scripted-adapter.ts'
 
 /** Mount one advisor service with its runtime dependencies. */
@@ -17,7 +19,7 @@ async function setup(adapter: LlmAdapter, config?: Partial<{ provider: string; m
   await ctx.plugin(LlmRuntime)
   await ctx.plugin(FileSettingsProvider, { path: join(tmpdir(), `${randomUUID()}-advisor-settings.yaml`), watch: false })
   await ctx.plugin(AdvisorService, { provider: 'test', model: 'advisor-model', maxTokens: 256, ...config })
-  ctx.effect(() => ctx.llm.registerAdapter(['test'], adapter))
+  ctx.effect(() => ctx.llm.registerAdapter([config?.provider ?? 'test'], adapter))
   return ctx
 }
 
@@ -31,6 +33,14 @@ function agentWithSession(): Agent {
 /** Return the advisor audit records in one agent session. */
 function invocationEvents(agent: Agent) {
   return agent.session.snapshotEvents().filter(event => event.type === 'advisor/invocation')
+}
+
+/** Extract captured provider messages after checking the mock-server JSON boundary. */
+function capturedMessages(body: unknown): unknown[] {
+  if (typeof body !== 'object' || body === null || !('messages' in body) || !Array.isArray(body.messages)) {
+    throw new Error('the mock server did not capture a chat-completions messages array')
+  }
+  return body.messages
 }
 
 /** Adapter that waits for cancellation after the consultation receives one chunk. */
@@ -111,6 +121,39 @@ describe('AdvisorService.consult', () => {
     expect(invocationEvents(agent)[0]?.data).toMatchObject({ usage })
   })
 
+  it('sends a final assistant tool call through the DeepSeek provider serializer', async () => {
+    const server = await startMockLlmServer({ sequence: ['success'], successText: 'guidance' })
+    try {
+      const adapter = new DeepSeekAdapter({
+        options: () => resolveAdapterOptions({ baseURL: server.baseURL, thinking: 'disabled' }),
+        resolveApiKey: () => Promise.resolve('mock-key'),
+        resolveUserId: () => '00000000-0000-4000-8000-000000000001' as never,
+        prepareExtensions: () => Promise.resolve({ fields: {}, accept: () => Promise.resolve() }),
+      })
+      const ctx = await setup(adapter, { provider: 'deepseek-official', model: 'deepseek-flash' })
+      const agent = agentWithSession()
+      appendAdvisorCall(agent.session, 'final-tool-call', 1, 1)
+
+      await expect(ctx.advisors.consult({ agent, signal: new AbortController().signal })).resolves.toMatchObject({
+        guidance: [{ type: 'text', text: 'guidance' }],
+      })
+
+      expect(capturedMessages(server.requests[0]?.body).find(message => (
+        typeof message === 'object' && message !== null && 'role' in message && message.role === 'assistant'
+      ))).toEqual({
+        role: 'assistant',
+        content: '',
+        tool_calls: [{
+          id: 'final-tool-call',
+          type: 'function',
+          function: { name: 'advisor', arguments: '{}' },
+        }],
+      })
+    } finally {
+      await server.close()
+    }
+  })
+
   it('records and rethrows an adapter failure', async () => {
     const ctx = await setup(new ScriptedLlmAdapter({ kind: 'error', message: 'upstream exploded', code: 'UPSTREAM' }))
     const agent = agentWithSession()
@@ -158,6 +201,16 @@ describe('AdvisorService.consult', () => {
     }
   })
 
+  it('keeps usage received before truncation in the failed invocation', async () => {
+    const usage = { inputTokens: 3, outputTokens: 5 }
+    const ctx = await setup(new ScriptedLlmAdapter({ kind: 'max-tokens', usage }))
+    const agent = agentWithSession()
+
+    await expect(ctx.advisors.consult({ agent, signal: new AbortController().signal })).rejects.toThrow('truncated at its token cap')
+
+    expect(invocationEvents(agent)[0]?.data).toMatchObject({ outcome: 'failed', usage })
+  })
+
   it('fails closed when output is blank or non-text', async () => {
     for (const outcome of [
       { kind: 'text', text: ' ' },
@@ -179,6 +232,17 @@ describe('AdvisorService.consult', () => {
     await expect(ctx.advisors.consult({ agent, signal: new AbortController().signal }))
       .rejects.toMatchObject({ code: 'ADVISOR_EMPTY_OUTPUT' })
     expect(invocationEvents(agent)[0]?.data).toMatchObject({ outcome: 'failed' })
+  })
+
+  it('keeps usage received before empty guidance in the failed invocation', async () => {
+    const usage = { inputTokens: 3, outputTokens: 0 }
+    const ctx = await setup(new ScriptedLlmAdapter({ kind: 'empty', usage }))
+    const agent = agentWithSession()
+
+    await expect(ctx.advisors.consult({ agent, signal: new AbortController().signal }))
+      .rejects.toMatchObject({ code: 'ADVISOR_EMPTY_OUTPUT' })
+
+    expect(invocationEvents(agent)[0]?.data).toMatchObject({ outcome: 'failed', usage })
   })
 
   it('uses a configured reasoning effort for the matching route', async () => {

@@ -16,11 +16,11 @@ Status: implemented
 
 路由选择保持在模型工具之外。provider 和 model 是部署和用户设置的选择，不是模型在每次工具调用时的选择；因此工具不携带这些字段，也不能绕过已配置路由及其预检。
 
-`withAdvisorInstruction()` 在 `messages` 内携带父系统提示，并通过附加顾问指令修改 `messages[0]`。因此顾问请求不是父请求的纯前缀。在相同 provider 路由上，只有未改变的初始系统文本 token 可以复用；系统消息已改变，后续对话后缀不能复用父请求前缀。重复的顾问请求可以复用自身由 provider 管理的前缀，跨厂商顾问不能复用父 provider 的缓存。完整对话输入与输出 token 上限的额外成本是独立审阅的刻意取舍。
+`withAdvisorInstruction()` 在 `messages` 内携带父系统提示，并将顾问指令附加到有效系统消息：普通历史使用 `messages[0]`，in-history 路由使用最新的系统消息。因此顾问请求不是父请求的纯前缀。在相同 provider 路由上，只有未改变的初始系统文本 token 可以复用；已改变的系统消息和后续对话后缀不能复用父请求前缀。重复的顾问请求可以复用自身由 provider 管理的前缀，跨厂商顾问不能复用父 provider 的缓存。完整对话输入与输出 token 上限的额外成本是独立审阅的刻意取舍。
 
 能力排序被延后，因为当前消费者没有为通用模型排序提供证据。后续配置声明的层级可以表达明确的部署策略，而不让工具选择路由。
 
-`advisor/invocation` 记录路由、token 上限、结果、指导内容或安全失败细节及可选 usage，用于审计和计费。它并非 model-visible-equals-logged 不变量所必需：咨询结果经由调用工具的 `tool/result` 对模型可见，而 invocation 记录仅写入日志。
+`advisor/invocation` 记录路由、token 上限、结果、指导内容或安全失败细节及已观察到的 usage，用于审计和计费，包括在错误、取消、截断或空指导前已收到的 usage。它并非 model-visible-equals-logged 不变量所必需：咨询结果经由调用工具的 `tool/result` 对模型可见，而 invocation 记录仅写入日志。
 
 ## Alternatives considered
 
@@ -32,7 +32,7 @@ Status: implemented
 
 ## Testing
 
-聚焦的顾问和 bundle 测试覆盖路由预检、adapter 失败、第一段流式输出后的取消、空输出、持久化失败结果、bundle 行和依赖声明。`llm-mock-server` 不提供客户端在第一段流式输出后取消的场景，因此该取消路径使用 `MidStreamAbortAdapter`。已发布 headless 子进程 smoke 使用无密钥 adapter 启动真实 Loader profile，执行 `advisor` 工具调用，记录 `advisor/invocation`，并将指导返回给调用 Agent。
+聚焦的顾问和 bundle 测试覆盖路由预检、adapter 失败、第一段流式输出后的取消、空输出、持久化失败结果和 usage、有效 in-history 系统位置、作用域提示可见性、bundle 行和依赖声明。`llm-mock-server` 不提供客户端在第一段流式输出后取消的场景，因此该取消路径使用 `MidStreamAbortAdapter`。DeepSeek adapter 路径使用 `llm-mock-server` 证明 advisor 历史中最后一条 assistant 工具调用会序列化为 OpenAI 兼容的 assistant `tool_calls` 消息及空内容；这只是 DeepSeek adapter 路径的证据，并非 provider-neutral readiness 声明。已发布 headless 子进程 smoke 使用无密钥 adapter 启动真实 Loader profile，执行 `advisor` 工具调用，记录 `advisor/invocation`，并将指导返回给调用 Agent。
 
 Task 3 的内存组合检查不满足产品可见插件的包策略；本次变更添加真实 Loader/app-process 覆盖。Task 5 记录了两个与顾问代码无关但仍存在的 Windows symlink gate 阻碍：`verify-node-next-types` 在 TypeScript 前因 `symlinkSync` 报告 `EPERM: operation not permitted` 而失败；Git mode `120000` 的 `apps/cli/tests/profiles/acp/cordis.yml` 被物化为字面目标 `../../../../../snapshots/acp/escalation-approved/cordis.yml`，使 `verify-cordis-config` 报告 YAML 根不是 entry array。当前 verifier 运行复现了后一诊断。不会修改 checkout symlink 路径以隐藏任一环境失败。
 

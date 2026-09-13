@@ -10,18 +10,22 @@ import { createSystemMessage } from '@deepseek-ai/dsh-llm'
 import type { ContentBlock, Message } from '@deepseek-ai/dsh-llm'
 
 /**
- * Put an advisor instruction in the leading system message.
+ * Put an advisor instruction in the latest effective system message.
  * @param messages - derived conversation messages.
  * @param instruction - resolved advisor instruction.
- * @returns a new message list with one leading system message.
+ * @returns a new message list with the instruction in its effective system slot.
  */
 export function withAdvisorInstruction(messages: readonly Message[], instruction: string): Message[] {
   if (messages.length === 0) return [createSystemMessage(instruction, 'advisor')]
-  const [head, ...rest] = messages
-  if (head === undefined || head.role !== 'system') return [createSystemMessage(instruction, 'advisor'), ...messages]
-  const text = head.content
+  const latestSystem = messages.findLastIndex(message => message.role === 'system')
+  if (latestSystem === -1) return [createSystemMessage(instruction, 'advisor'), ...messages]
+  const message = messages[latestSystem]
+  if (message === undefined) return [createSystemMessage(instruction, 'advisor'), ...messages]
+  const text = message.content
     .filter((block): block is Extract<ContentBlock, { type: 'text' }> => block.type === 'text')
     .map(block => block.text)
     .join('')
-  return [createSystemMessage(text.length === 0 ? instruction : `${text}\n\n${instruction}`, 'advisor'), ...rest]
+  return messages.map((candidate, index) => index === latestSystem
+    ? createSystemMessage(text.length === 0 ? instruction : `${text}\n\n${instruction}`, 'advisor')
+    : candidate)
 }

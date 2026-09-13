@@ -139,30 +139,45 @@ export class AdvisorService extends Service {
     try {
       for await (const chunk of this.ctx.llm.stream(options)) assembler.push(chunk)
     } catch (error: unknown) {
-      session.append('advisor/invocation', { ...base, outcome: 'failed', error: describeFailure(error) })
+      session.append('advisor/invocation', {
+        ...base,
+        outcome: 'failed',
+        error: describeFailure(error),
+        ...invocationUsage(assembler),
+      })
       throw error
     }
     const terminal = finishError(assembler.finish)
     if (terminal !== undefined) {
-      session.append('advisor/invocation', { ...base, outcome: 'failed', error: terminal.message })
+      session.append('advisor/invocation', {
+        ...base,
+        outcome: 'failed',
+        error: terminal.message,
+        ...invocationUsage(assembler),
+      })
       throw terminal
     }
     const guidance = textBlocks(assembler.blocks())
     if (guidance.length === 0) {
       const empty = new LlmError('the advisor produced no guidance', 'ADVISOR_EMPTY_OUTPUT')
-      session.append('advisor/invocation', { ...base, outcome: 'failed', error: empty.message })
+      session.append('advisor/invocation', {
+        ...base,
+        outcome: 'failed',
+        error: empty.message,
+        ...invocationUsage(assembler),
+      })
       throw empty
     }
     session.append('advisor/invocation', {
       ...base,
       outcome: 'completed',
       guidance,
-      ...assembler.usage === undefined ? {} : { usage: assembler.usage },
+      ...invocationUsage(assembler),
     })
     return {
       guidance,
       route,
-      ...assembler.usage === undefined ? {} : { usage: assembler.usage },
+      ...invocationUsage(assembler),
     }
   }
 }
@@ -171,6 +186,11 @@ export class AdvisorService extends Service {
 function textBlocks(blocks: readonly ContentBlock[]): ContentBlock[] {
   return blocks.filter((block): block is Extract<ContentBlock, { type: 'text' }> =>
     block.type === 'text' && block.text.trim().length > 0)
+}
+
+/** Return observed stream usage for one durable advisor invocation. */
+function invocationUsage(assembler: BlockAssembler): { usage?: NonNullable<BlockAssembler['usage']> } {
+  return assembler.usage === undefined ? {} : { usage: assembler.usage }
 }
 
 /** Turn an abnormal terminal finish into an advisor error. */

@@ -26,10 +26,15 @@ export const ADVISOR_TOOL_DESCRIPTION = [
   ].join(' '),
 ].join('\n\n')
 
-/** The prompt section telling the model how to use the advisor tool. */
-export const ADVISOR_PROMPT_SECTION = [
-  'Escalate to the advisor tool when judgment matters more than speed: before committing to an',
-  'approach, when a failure keeps recurring, or before declaring work complete. The advisor reads',
-  'the full conversation and consumes additional tokens, so consult it at decision points rather',
-  'than every step.',
-].join('\n')
+/** Render the prompt section for one configured model-facing advisor tool name. */
+export function advisorPromptSection(toolName: string): string {
+  return [
+    `Use \`${toolName}\` when judgment matters more than speed: before committing to an`,
+    `approach, when a failure keeps recurring, or before declaring work complete. \`${toolName}\` reads`,
+    'the full conversation and consumes additional tokens, so consult it at decision points rather',
+    'than every step.',
+  ].join('\n')
+}
+
+/** The default advisor prompt section. */
+export const ADVISOR_PROMPT_SECTION = advisorPromptSection('advisor')

@@ -11,7 +11,7 @@ import type {} from '@deepseek-ai/dsh-advisor'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import z from '@deepseek-ai/schemastery'
-import { ADVISOR_PROMPT_SECTION, ADVISOR_TOOL_DESCRIPTION } from './description.ts'
+import { advisorPromptSection, ADVISOR_TOOL_DESCRIPTION } from './description.ts'
 
 export const name = 'tool-advisor'
 export const inject = ['tools', 'advisors', 'systemPrompt']
@@ -84,7 +84,9 @@ export function apply(ctx: Context, config: Config = {}): void {
     ctx.systemPrompt.section({
       name: `tool:${toolName}`,
       order: ctx.systemPrompt.getSectionOrder('TOOL_ADVISOR'),
-      text: ADVISOR_PROMPT_SECTION,
+      text: context => ctx.tools.get(toolName, context.scope) === undefined
+        ? ''
+        : advisorPromptSection(toolName),
     })
   }
 }
