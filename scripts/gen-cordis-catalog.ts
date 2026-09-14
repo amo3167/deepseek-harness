@@ -58,6 +58,7 @@ export const SERVICE_PAGE: Record<string, string> = {
   agentDefaultModel: 'core.md',
   agentPresets: 'core.md',
   agents: 'core.md',
+  advisors: 'llm-streaming.md',
   approval: 'approval.md',
   attachments: 'attachment.md',
   shell: 'shell.md',
@@ -688,6 +689,9 @@ export const FOUNDATION_TYPE_NAMES: ReadonlySet<string> = new Set([
 /** Project types deliberately documented outside the subsystems catalog. */
 export const TYPE_LINK_EXEMPTIONS: Readonly<Record<string, string>> = {
   z: 'schemastery schema constructor is owned by vendor/schemastery (vendored upstream)',
+  AdvisorConsultRequest: 'advisor consultation request is owned by packages/advisor/advisor/README.md',
+  AdvisorGuidance: 'advisor consultation result is owned by packages/advisor/advisor/README.md',
+  AdvisorRoute: 'advisor route is owned by packages/advisor/advisor/README.md',
   BeginCommandRequest: 'event-local request contract is owned by packages/client/ui-input-trigger/src/types.ts',
   InsertReferenceRequest: 'event-local request contract is owned by packages/client/ui-input-trigger/src/types.ts',
   ConsumeTokenRequest: 'event-local request contract is owned by packages/client/ui-input-trigger/src/types.ts',

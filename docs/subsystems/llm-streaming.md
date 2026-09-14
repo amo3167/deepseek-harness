@@ -610,7 +610,7 @@ interface GenerateOptions {
    * map the purpose to model-hidden transport metadata or purpose-specific
    * generation policy. Ordinary conversation requests leave it unset.
    */
-  purpose?: 'compaction' | 'session-title'
+  purpose?: 'compaction' | 'session-title' | 'advisor'
 }
 ```
 
@@ -853,6 +853,29 @@ declare abstract class LlmAdapter {
 ## Cordis API
 
 Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — the language sides differ only in locale-specific paired document paths. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
+
+<a id="ctxadvisors--advisorservice"></a>
+
+### `ctx.advisors` — `AdvisorService`
+
+Owns advisor settings, route resolution, auxiliary calls, and audit records.
+
+```ts cordis-catalog
+/**
+ * Return the live settings route, or the optional agent default-model route.
+ * @returns detached route when one source supplies it.
+ */
+currentRoute(): AdvisorRoute | undefined
+
+/**
+ * Consult the auxiliary LLM and append exactly one log-only invocation.
+ * @param request - consulting agent and cancellation signal.
+ * @returns completed advisor guidance and the route that produced it.
+ */
+async consult(request: AdvisorConsultRequest): Promise<AdvisorGuidance>
+```
+
+Source: [`packages/advisor/advisor/src/index.ts`](../../packages/advisor/advisor/src/index.ts)
 
 <a id="ctxdeepseekllmapiextensions--deepseekllmapiextensionregistry"></a>
 

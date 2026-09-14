@@ -40,6 +40,8 @@ import SkillRegistry from '@deepseek-ai/dsh-skill'
 import * as SkillFileSystem from '@deepseek-ai/dsh-skill-filesystem'
 import LocalJobRegistry from '@deepseek-ai/dsh-jobs-local'
 import * as ToolAskUser from '@deepseek-ai/dsh-tool-ask-user'
+import AdvisorService from '@deepseek-ai/dsh-advisor'
+import * as ToolAdvisor from '@deepseek-ai/dsh-tool-advisor'
 import * as ToolBash from '@deepseek-ai/dsh-tool-bash'
 import * as ToolPwsh from '@deepseek-ai/dsh-tool-pwsh'
 import * as ToolBashPersistent from '@deepseek-ai/dsh-tool-bash-persistent'
@@ -188,6 +190,18 @@ export interface ToolPackage {
  * guard proves it is exhaustive against the on-disk glob.
  */
 const TOOL_PACKAGES: ToolPackage[] = [
+  {
+    pkg: '@deepseek-ai/dsh-tool-advisor',
+    dir: 'tool-advisor',
+    source: 'packages/advisor/tool-advisor/src/index.ts',
+    requires: ['ctx.tools', 'ctx.advisors', 'ctx.systemPrompt', 'an owning Agent at execution time'],
+    writes: ['tool/call', 'advisor/invocation', 'tool/result'],
+    async mount(ctx) {
+      await ctx.plugin(LlmRuntime)
+      await ctx.plugin(AdvisorService, { provider: 'catalog', model: 'catalog' })
+      await ctx.plugin(ToolAdvisor)
+    },
+  },
   {
     pkg: '@deepseek-ai/dsh-tool-ask-user',
     dir: 'tool-ask-user',

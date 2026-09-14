@@ -33,6 +33,30 @@ Depends on: `Stream` (`@agentclientprotocol/sdk`)
 
 Source: [`packages/acp/acp/src/index.ts:75`](../packages/acp/acp/src/index.ts)
 
+<a id="deepseek-aidsh-advisor"></a>
+
+## `@deepseek-ai/dsh-advisor`
+
+Requires: `llm`
+
+```ts config-catalog
+/** Configuration for advisor consultations. */
+export interface Config {
+  /** Registered provider route for the advisor model. */
+  provider: string
+  /** Provider-owned exact model id. */
+  model: string
+  /** Adapter-owned reasoning effort for the advisor route. */
+  reasoningEffort?: string
+  /** Output-token cap for one consultation. */
+  maxTokens?: number
+  /** System instruction placed in the conversation's system slot. */
+  instruction?: string
+}
+```
+
+Source: [`packages/advisor/advisor/src/index.ts:36`](../packages/advisor/advisor/src/index.ts)
+
 <a id="deepseek-aidsh-agent-default-model"></a>
 
 ## `@deepseek-ai/dsh-agent-default-model`
@@ -2607,7 +2631,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/core/system-prompt/src/index.ts:242`](../packages/core/system-prompt/src/index.ts)
+Source: [`packages/core/system-prompt/src/index.ts:243`](../packages/core/system-prompt/src/index.ts)
 
 <a id="deepseek-aidsh-terminal-bash"></a>
 
@@ -2705,6 +2729,24 @@ export type TokenMeterConfig = Record<string, never>
 ```
 
 Source: [`packages/llm/token-meter/src/types.ts:13`](../packages/llm/token-meter/src/types.ts)
+
+<a id="deepseek-aidsh-tool-advisor"></a>
+
+## `@deepseek-ai/dsh-tool-advisor`
+
+Requires: `tools` · `advisors` · `systemPrompt`
+
+```ts config-catalog
+/** Configuration for the advisor tool. */
+export interface Config {
+  /** Model-facing tool name. Each loaded instance must use a distinct name. */
+  toolName?: string
+  /** Whether to register the prompt section that explains advisor use. */
+  promptSection?: boolean
+}
+```
+
+Source: [`packages/advisor/tool-advisor/src/index.ts:20`](../packages/advisor/tool-advisor/src/index.ts)
 
 <a id="deepseek-aidsh-tool-bash"></a>
 

@@ -353,6 +353,17 @@
         toolName: subagent
         backgroundMode: continuable
 
+    # Advisor: an opt-in second model the agent escalates to at decision points.
+    # `provider` and `model` are required; point them at any registered ctx.llm
+    # route, including a cross-vendor one from dsh-llm-pi-ai.
+    - id: advisor
+      name: '@deepseek-ai/dsh-advisor'
+      config:
+        provider: deepseek-official
+        model: deepseek-flash
+    - id: tool-advisor
+      name: '@deepseek-ai/dsh-tool-advisor'
+
     # Fork omits model selection so provider/model stay equal to the parent and
     # the inherited history remains eligible for KV Cache reuse. This base row
     # stays one-shot; preset layers may select continuable mode without adding a

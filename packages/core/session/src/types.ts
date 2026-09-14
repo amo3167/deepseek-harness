@@ -2,6 +2,7 @@ import { brandNumber, brandString, type Branded, type BrandedNumber } from '@dee
 import type {
   AssistantMessage,
   AssistantStreamRecord,
+  ContentBlock,
   ToolCallId,
   LlmCallConfig,
   LlmCallConfigAdapterDefaults,
@@ -398,6 +399,27 @@ export interface SessionEventMap {
    * so tolerating concurrent writers needs a signal beyond the log.
    */
   'session/end-seed': { inherited?: true }
+  /**
+   * One advisor consultation: route, caller token cap, outcome, and returned
+   * guidance. It is log-only and adds no model-visible input.
+   */
+  'advisor/invocation': {
+    /** The exact provider/model route consulted. */
+    provider: string
+    model: string
+    /** Adapter-owned reasoning effort requested for this route, when any. */
+    reasoningEffort?: string
+    /** The output-token cap the caller applied. */
+    maxTokens: number
+    /** Whether the consultation produced guidance. */
+    outcome: 'completed' | 'failed'
+    /** Advisor-reported token usage, when the adapter reported any. */
+    usage?: TokenUsage
+    /** The guidance blocks, present only on a completed consultation. */
+    guidance?: ContentBlock[]
+    /** Safe failure detail, present only on a failed consultation. */
+    error?: string
+  }
 }
 
 /** The appendable event-type keys of {@link SessionEventMap}, plugin-merged extensions included. */
