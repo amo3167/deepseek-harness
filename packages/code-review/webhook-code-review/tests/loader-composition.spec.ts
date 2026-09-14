@@ -131,13 +131,15 @@ function prDelivery(action: string) {
   }
 }
 
+const absPath = process.platform === 'win32' ? 'C:\\work\\auto-review' : '/work/auto-review'
+
 describe('real Loader composition', () => {
   it('creates one review Session with the deterministic prompt for a matching delivery', { timeout: 60_000 }, async () => {
     const { ctx, captured, followed } = await loadedRuntime(
-      ['workspacePath: C:\\work\\auto-review', 'agentPreset: standard', 'permissionPreset: read-only'].join('\n'))
+      [`workspacePath: ${absPath}`, 'agentPreset: standard', 'permissionPreset: read-only'].join('\n'))
     ctx.webhookRuntime.dispatch(prDelivery('synchronize'))
     await followed.promise
-    expect(captured.workspacePath).toBe('C:\\work\\auto-review')
+    expect(captured.workspacePath).toBe(absPath)
     expect(captured.agentPreset).toBe('standard')
     expect(captured.permissionPreset).toBe('read-only')
     expect(captured.title).toBe('Code review owner/repo PR synchronize')
@@ -155,7 +157,7 @@ describe('real Loader composition', () => {
 
   it('takes no action for a pull request action outside the allowlist', { timeout: 60_000 }, async () => {
     const { ctx, captured } = await loadedRuntime(
-      ['workspacePath: C:\\work\\auto-review', 'agentPreset: standard', 'permissionPreset: read-only'].join('\n'))
+      [`workspacePath: ${absPath}`, 'agentPreset: standard', 'permissionPreset: read-only'].join('\n'))
     ctx.webhookRuntime.dispatch(prDelivery('closed'))
     const tick = () => new Promise(resolve => setImmediate(resolve))
     await tick()
