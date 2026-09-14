@@ -35,6 +35,10 @@ kind: "package-reference"
 
 组合路由是必填项。`advisor` 设置区段的实时值优先于此配置项；当这些实时值没有指定路由时，可选的 `agentDefaultModel` 选择是最后的回退。任何可通过 `ctx.llm` 解析的提供方和模型都有效，因此顾问可以使用 [`dsh-llm-pi-ai`](../../llm/llm-pi-ai/README.zh.md) 注册的跨厂商路由。
 
+### 全局 Web 选择
+
+在 Web 界面输入 `/advisor`，即可为所有会话选择一个顾问模型，或选择“关闭”。该命令会将选择持久化到 `advisor` 设置区段；“关闭”会设置 `enabled: false`，同时保留已保存的路由。选择模型会启用咨询并写入其默认推理强度。模型没有默认强度时，该命令会清除用户推理强度值，但由组合继承的推理强度仍可能保留。选择只会改变后续咨询，不会改变已经在进行的咨询。
+
 ```yaml
 - name: '@deepseek-ai/dsh-advisor'
   config:

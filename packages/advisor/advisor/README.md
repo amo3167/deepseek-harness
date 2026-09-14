@@ -35,6 +35,10 @@ Choose it when an agent needs independent review from a separately configured mo
 
 The composition route is required. Live values from the `advisor` settings section take precedence over this entry; when those live values do not name a route, the optional `agentDefaultModel` selection is the final fallback. Any provider and model that resolve through `ctx.llm` are valid, so the advisor can use a cross-vendor route registered by [`dsh-llm-pi-ai`](../../llm/llm-pi-ai/README.md).
 
+### Global Web selection
+
+In the Web GUI, enter `/advisor` to select one advisor model for all conversations or choose Off. The command persists that choice in the `advisor` settings section; Off sets `enabled: false` while retaining the saved route. Selecting a model enables consultations and writes its default reasoning effort. When the model has no default effort, the command clears the user reasoning-effort value, but a composition-inherited effort can remain. A selection changes later consultations only; it does not alter a consultation already in flight.
+
 ```yaml
 - name: '@deepseek-ai/dsh-advisor'
   config:

@@ -27,6 +27,10 @@ English | [中文](README.zh.md)
 
 Mount this package beside `dsh-advisor` to expose one consultation tool to the model and, by default, add concise escalation guidance to the system prompt while advisor settings are enabled.
 
+### Global Web control
+
+In the Web GUI, `/advisor` persists one advisor choice for all conversations. Choosing Off disables consultations and removes this tool and its prompt section; choosing a model re-enables both. The setting changes future model requests and consultations, not an advisor invocation already in flight.
+
 ### When to choose it
 
 Choose it when the calling model should decide when to request a second opinion using the advisor route that the composition or live settings already selected. Avoid it when consultations must be invoked only by application code, when a caller must select a route per call, or when the extra schema and prompt tokens are not justified.

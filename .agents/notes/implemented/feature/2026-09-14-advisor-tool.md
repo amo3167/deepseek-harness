@@ -12,6 +12,8 @@ The calling agent needs an opt-in second opinion at decision points without turn
 
 `dsh-base` composes `dsh-advisor` with the same `deepseek-official` / `deepseek-flash` route as `agent-default-model`, then composes `dsh-tool-advisor`. The model receives the parameter-free `advisor` tool and its optional prompt section only while live advisor settings enable consultations; disabling removes both registrations and re-enabling restores them without a restart. The tool passes the calling Agent and cancellation signal to `ctx.advisors`; the service makes one auxiliary `ctx.llm` call and records one log-only `advisor/invocation` outcome.
 
+The Web bundle mounts a global `/advisor` command that persists one advisor choice for all conversations. Off writes `enabled: false` without erasing the saved route; selecting a model enables the setting and writes its default reasoning effort. A model with no default effort clears the user effort through `settings.mutate`, so a composition-inherited effort can remain. The new setting governs later consultations and does not revise an invocation already in flight.
+
 The auxiliary-call pattern is used instead of the subagent seam because a consultation is one review request over the calling Session, not independent work; it needs no child Agent, inbox, turn lifecycle, or Session; it must return through the calling turn's ordinary tool-result path; and the existing LLM route, settings, preflight, cancellation, and provider adapters already own the needed execution behavior. A subagent would add a child lifecycle and capability surface without a consumer need.
 
 Route selection remains outside the model-facing tool. Provider and model are deployment and user-settings choices, not a model choice made per tool call; the tool therefore carries neither field and cannot bypass the configured route or its preflight.
@@ -42,4 +44,4 @@ The keyless recorded-session snapshot normally required for this model-visible c
 
 ## Consequences
 
-The base-backed profiles expose a configured advisor tool without an automatic escalation policy, per-call route override, ranking table, command, flag, or bespoke transcript card. Consultations are auditable and fail closed on unusable, aborted, truncated, erroneous, or empty output, but each review pays for its auxiliary request and may reuse only the limited provider cache prefix described above.
+The base-backed profiles expose a configured advisor tool and the Web bundle provides the global `/advisor` command, but no automatic escalation policy, per-call route override, ranking table, flag, or bespoke transcript card. Consultations are auditable and fail closed on unusable, aborted, truncated, erroneous, or empty output, but each review pays for its auxiliary request and may reuse only the limited provider cache prefix described above.

@@ -12,6 +12,8 @@ Status: implemented
 
 `dsh-base` 将 `dsh-advisor` 与 `agent-default-model` 相同的 `deepseek-official` / `deepseek-flash` 路由一同组合，再组合 `dsh-tool-advisor`。仅当实时顾问设置启用咨询时，模型才会获得无参数的 `advisor` 工具及其可选提示段；禁用会移除两项注册，重新启用会在无需重启的情况下恢复它们。该工具把调用 Agent 与取消信号传给 `ctx.advisors`；服务发起一次辅助 `ctx.llm` 调用，并记录一条仅日志的 `advisor/invocation` 结果。
 
+Web bundle 挂载全局 `/advisor` 命令，为所有会话持久化一个顾问选择。“关闭”会写入 `enabled: false`，但不会清除保存的路由；选择模型会启用设置并写入其默认推理强度。没有默认推理强度的模型会通过 `settings.mutate` 清除用户强度，因此由组合继承的推理强度仍可能保留。新设置会管理后续咨询，而不会修改已经在进行的调用。
+
 这里使用辅助调用模式而非 subagent seam，因为咨询是在调用 Session 上的一次审阅请求，而非独立工作；它不需要子 Agent、收件箱、轮次生命周期或 Session；它必须通过调用轮次的普通工具结果路径返回；现有 LLM 路由、设置、预检、取消与 provider adapter 已拥有所需执行行为。子 Agent 会增加子生命周期和能力表面，却没有当前消费者需求。
 
 路由选择保持在模型工具之外。provider 和 model 是部署和用户设置的选择，不是模型在每次工具调用时的选择；因此工具不携带这些字段，也不能绕过已配置路由及其预检。
@@ -42,4 +44,4 @@ Task 3 的内存组合检查不满足产品可见插件的包策略；本次变�
 
 ## Consequences
 
-基础 bundle 支持的 profile 会暴露已配置的 advisor 工具，但没有自动升级策略、每次调用路由覆盖、排序表、命令、标志或专用 transcript card。咨询可审计，并对不可用、取消、截断、错误或空输出 fail closed；但每次审阅都要支付辅助请求成本，并且只能复用上述有限的 provider 缓存前缀。
+基础 bundle 支持的 profile 会暴露已配置的 advisor 工具，Web bundle 则提供全局 `/advisor` 命令；但没有自动升级策略、每次调用路由覆盖、排序表、标志或专用 transcript card。咨询可审计，并对不可用、取消、截断、错误或空输出 fail closed；但每次审阅都要支付辅助请求成本，并且只能复用上述有限的 provider 缓存前缀。

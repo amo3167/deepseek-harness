@@ -87,7 +87,10 @@ export class AdvisorService extends Service {
     })
   }
 
-  /** Whether the live advisor settings permit consultations. */
+  /**
+   * Whether the live advisor settings permit consultations.
+   * @returns true when the current settings enable advisor consultations.
+   */
   isEnabled(): boolean {
     return this.source().enabled
   }

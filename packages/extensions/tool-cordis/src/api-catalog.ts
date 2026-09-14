@@ -87,8 +87,14 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     description: 'Owns advisor settings, route resolution, auxiliary calls, and audit records.',
     methods: [
       {
+        signature: 'isEnabled(): boolean',
+        description: 'Whether the live advisor settings permit consultations.',
+        parameters: [],
+        returns: 'true when the current settings enable advisor consultations.',
+      },
+      {
         signature: 'currentRoute(): AdvisorRoute | undefined',
-        description: 'Return the live settings route, or the optional agent default-model route.',
+        description: 'Return the live settings route, or the optional agent default-model route when enabled.',
         parameters: [],
         returns: 'detached route when one source supplies it.',
       },

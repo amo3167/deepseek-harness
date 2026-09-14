@@ -26,7 +26,11 @@ export const ADVISOR_TOOL_DESCRIPTION = [
   ].join(' '),
 ].join('\n\n')
 
-/** Render the prompt section for one configured model-facing advisor tool name. */
+/**
+ * Render the prompt section for one configured model-facing advisor tool name.
+ * @param toolName - model-facing name of the advisor tool.
+ * @returns prompt text that directs the model to the configured tool.
+ */
 export function advisorPromptSection(toolName: string): string {
   return [
     `Use \`${toolName}\` when judgment matters more than speed: before committing to an`,

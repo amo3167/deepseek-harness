@@ -868,7 +868,13 @@ Owns advisor settings, route resolution, auxiliary calls, and audit records.
 
 ```ts cordis-catalog
 /**
- * Return the live settings route, or the optional agent default-model route.
+ * Whether the live advisor settings permit consultations.
+ * @returns true when the current settings enable advisor consultations.
+ */
+isEnabled(): boolean
+
+/**
+ * Return the live settings route, or the optional agent default-model route when enabled.
  * @returns detached route when one source supplies it.
  */
 currentRoute(): AdvisorRoute | undefined
