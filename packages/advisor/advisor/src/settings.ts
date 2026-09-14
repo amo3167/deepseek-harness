@@ -6,11 +6,13 @@
 
 import z from '@deepseek-ai/schemastery'
 
-/** Settings namespace carrying the advisor route preference. */
+/** Settings namespace carrying advisor enablement and route preferences. */
 export const ADVISOR_SETTINGS_NAMESPACE = 'advisor'
 
-/** Stored advisor route preferences. */
+/** Stored advisor enablement and route preferences. */
 export interface AdvisorConfigOptions {
+  /** Whether advisor consultations may resolve a route. */
+  readonly enabled: boolean
   /** Registered provider route. */
   readonly provider: string
   /** Provider-owned exact model id. */
@@ -19,8 +21,9 @@ export interface AdvisorConfigOptions {
   readonly reasoningEffort?: string
 }
 
-/** Schema for advisor route preferences. */
+/** Schema for advisor enablement and route preferences. */
 export const ADVISOR_SETTINGS_SCHEMA: z<AdvisorConfigOptions> = z.object({
+  enabled: z.boolean().default(true),
   provider: z.string().required(),
   model: z.string().required(),
   reasoningEffort: z.string(),

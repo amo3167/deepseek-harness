@@ -71,6 +71,7 @@ export class AdvisorService extends Service {
     this.maxTokens = config.maxTokens ?? 8192
     this.instruction = config.instruction ?? DEFAULT_ADVISOR_INSTRUCTION
     const entry: AdvisorConfigOptions = {
+      enabled: true,
       provider: config.provider,
       model: config.model,
       ...config.reasoningEffort === undefined ? {} : { reasoningEffort: config.reasoningEffort },
@@ -86,12 +87,18 @@ export class AdvisorService extends Service {
     })
   }
 
+  /** Whether the live advisor settings permit consultations. */
+  isEnabled(): boolean {
+    return this.source().enabled
+  }
+
   /**
-   * Return the live settings route, or the optional agent default-model route.
+   * Return the live settings route, or the optional agent default-model route when enabled.
    * @returns detached route when one source supplies it.
    */
   currentRoute(): AdvisorRoute | undefined {
     const current = this.source()
+    if (!current.enabled) return undefined
     if (current.provider.length > 0 && current.model.length > 0) {
       return { provider: current.provider, model: current.model }
     }
