@@ -281,6 +281,19 @@ describe('AdvisorService.consult', () => {
       .rejects.toThrow(/no advisor model is configured/)
   })
 
+  it('does not consult an agent default route when settings disable advisor', async () => {
+    const adapter = new ScriptedLlmAdapter({ kind: 'text', text: 'guidance' })
+    const ctx = await setup(adapter)
+    ctx.provide('agentDefaultModel', {
+      currentSelection: () => ({ provider: 'test', model: 'parent-model' }),
+    } as never)
+    await ctx.settings.update('advisor', { enabled: false, provider: '', model: '' })
+
+    await expect(ctx.advisors.consult({ agent: agentWithSession(), signal: new AbortController().signal }))
+      .rejects.toThrow(/no advisor model is configured/)
+    expect(adapter.seen).toEqual([])
+  })
+
   it('uses the optional agent default-model route when its advisor route is empty', async () => {
     const ctx = new Context()
     ctx.provide('agentDefaultModel', {
