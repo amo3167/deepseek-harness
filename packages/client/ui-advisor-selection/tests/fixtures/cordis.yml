@@ -1,0 +1,5 @@
+- name: test:browser-inputs
+- name: '@deepseek-ai/dsh-client-ui-input-trigger'
+- name: '@deepseek-ai/dsh-client-ui-commands'
+- name: '@deepseek-ai/dsh-client-ui-advisor-selection'
+- name: '@deepseek-ai/dsh-client-ui-advisor-selection/client'

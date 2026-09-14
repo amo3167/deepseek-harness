@@ -325,6 +325,9 @@
     - id: ui-model-selection
       name: '@deepseek-ai/dsh-client-ui-model-selection'
 
+    - id: ui-advisor-selection
+      name: '@deepseek-ai/dsh-client-ui-advisor-selection'
+
     - id: ui-permission
       name: '@deepseek-ai/dsh-client-ui-permission-presets'
 
