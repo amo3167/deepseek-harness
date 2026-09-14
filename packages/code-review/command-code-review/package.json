@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-command-code-review",
   "description": "The /dsh-code-review command: submits a deterministic code-review prompt to the agent so an interactive surface can start a DeepSeek-Harness code review on demand",
-  "version": "0.1.5-rc.1",
+  "version": "0.1.5-rc.2",
   "publishConfig": {
     "access": "public"
   },
