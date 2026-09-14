@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-tool-advisor` lets a model consult the configured advisor at a difficult decision point. The tool accepts no parameters because the advisor reads the calling agent's complete live conversation; callers do not choose or brief a model. Returned guidance becomes the tool result that the calling model reads and can act on. An optional prompt section tells the model when consultation is worth its additional tokens. Mount it only after `dsh-advisor` has configured the advisor route.
+`dsh-tool-advisor` lets a model consult the configured advisor at a difficult decision point. The tool accepts no parameters because the advisor reads the calling agent's complete live conversation; callers do not choose or brief a model. Returned guidance becomes the tool result that the calling model reads and can act on. An optional prompt section tells the model when consultation is worth its additional tokens. The tool and prompt section are visible only while the advisor settings enable consultations. Mount it only after `dsh-advisor` has configured the advisor route.
 
 ## Table of Contents
 
@@ -25,7 +25,7 @@ English | [中文](README.zh.md)
 <a id="use-this-package"></a>
 ## Use this package
 
-Mount this package beside `dsh-advisor` to expose one consultation tool to the model and, by default, add concise escalation guidance to the system prompt.
+Mount this package beside `dsh-advisor` to expose one consultation tool to the model and, by default, add concise escalation guidance to the system prompt while advisor settings are enabled.
 
 ### When to choose it
 
@@ -62,7 +62,7 @@ The model calls the tool with an empty object. The executor passes the calling a
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The plugin registers one concurrency-safe tool under `toolName`. Its input schema is the empty object. Execution delegates to `ctx.advisors`, then concatenates the returned text blocks for model-facing rendering; the advisor service owns route resolution, request construction and provider-cache behavior, streaming, validation, and durable invocation logging.
+The plugin observes advisor settings and registers one concurrency-safe tool under `toolName` only while consultations are enabled. Disabling removes the tool and its prompt section from the live registries; re-enabling restores them without restarting. Its input schema is the empty object. Execution delegates to `ctx.advisors`, then concatenates the returned text blocks for model-facing rendering; the advisor service owns route resolution, request construction and provider-cache behavior, streaming, validation, and durable invocation logging.
 
 When `promptSection` is enabled, the plugin also registers `ADVISOR_PROMPT_SECTION` at the `TOOL_ADVISOR` system-prompt order. Both registrations belong to the plugin lifecycle and unwind with it. Those registrations and the injected services keep every mutable relationship under an existing owner, so this package publishes no runtime invariant companion.
 

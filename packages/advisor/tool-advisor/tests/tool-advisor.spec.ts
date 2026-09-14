@@ -26,7 +26,7 @@ async function setup(config: tool.Config = {}) {
   await ctx.plugin(AdvisorService, { provider: 'test', model: 'advisor-model' })
   ctx.llm.registerAdapter(['test'], new ScriptedLlmAdapter({ kind: 'text', text: 'prefer the smaller refactor' }))
   const fiber = await ctx.plugin(tool, config)
-  return { ctx, fiber }
+  return { ctx, fiber, settings: ctx.settings }
 }
 
 /** One agent over a session holding a single user message. @param id - Session id. */
@@ -47,6 +47,26 @@ describe('tool-advisor', () => {
     const parameters = advisor?.parameters as { properties?: Record<string, unknown> } | undefined
     expect(Object.keys(parameters?.properties ?? {})).toEqual([])
     expect(ctx.tools.get('advisor')?.isConcurrencySafe?.({})).toBe(true)
+  })
+
+  it('removes advisor from model-visible tools after global advisor disablement', async () => {
+    const { ctx, settings } = await setup()
+
+    await settings.update('advisor', { enabled: false }, undefined)
+
+    expect(ctx.tools.get('advisor')).toBeUndefined()
+    expect((await ctx.systemPrompt.assemble()).sections.some(section => section.name === 'tool:advisor')).toBe(false)
+  })
+
+  it('restores the same parameter-free advisor tool after re-enabling', async () => {
+    const { ctx, settings } = await setup()
+
+    await settings.update('advisor', { enabled: false }, undefined)
+    await settings.update('advisor', { enabled: true }, undefined)
+
+    const parameters = ctx.tools.get('advisor')?.parameters as { properties?: Record<string, unknown> } | undefined
+    expect(Object.keys(parameters?.properties ?? {})).toEqual([])
+    expect((await ctx.systemPrompt.assemble()).sections.some(section => section.name === 'tool:advisor')).toBe(true)
   })
 
   it('returns advisor guidance as tool result content', async () => {

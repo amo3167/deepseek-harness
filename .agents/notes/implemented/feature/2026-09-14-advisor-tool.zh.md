@@ -10,7 +10,7 @@ Status: implemented
 
 ## 决策
 
-`dsh-base` 将 `dsh-advisor` 与 `agent-default-model` 相同的 `deepseek-official` / `deepseek-flash` 路由一同组合，再组合 `dsh-tool-advisor`。模型会获得无参数的 `advisor` 工具及其可选提示段。该工具把调用 Agent 与取消信号传给 `ctx.advisors`；服务发起一次辅助 `ctx.llm` 调用，并记录一条仅日志的 `advisor/invocation` 结果。
+`dsh-base` 将 `dsh-advisor` 与 `agent-default-model` 相同的 `deepseek-official` / `deepseek-flash` 路由一同组合，再组合 `dsh-tool-advisor`。仅当实时顾问设置启用咨询时，模型才会获得无参数的 `advisor` 工具及其可选提示段；禁用会移除两项注册，重新启用会在无需重启的情况下恢复它们。该工具把调用 Agent 与取消信号传给 `ctx.advisors`；服务发起一次辅助 `ctx.llm` 调用，并记录一条仅日志的 `advisor/invocation` 结果。
 
 这里使用辅助调用模式而非 subagent seam，因为咨询是在调用 Session 上的一次审阅请求，而非独立工作；它不需要子 Agent、收件箱、轮次生命周期或 Session；它必须通过调用轮次的普通工具结果路径返回；现有 LLM 路由、设置、预检、取消与 provider adapter 已拥有所需执行行为。子 Agent 会增加子生命周期和能力表面，却没有当前消费者需求。
 
@@ -32,7 +32,7 @@ Status: implemented
 
 ## Testing
 
-聚焦的顾问和 bundle 测试覆盖路由预检、adapter 失败、第一段流式输出后的取消、空输出、持久化失败结果和 usage、有效 in-history 系统位置、作用域提示可见性、bundle 行和依赖声明。`llm-mock-server` 不提供客户端在第一段流式输出后取消的场景，因此该取消路径使用 `MidStreamAbortAdapter`。DeepSeek adapter 路径使用 `llm-mock-server` 证明 advisor 历史中最后一条 assistant 工具调用会序列化为 OpenAI 兼容的 assistant `tool_calls` 消息及空内容；这只是 DeepSeek adapter 路径的证据，并非 provider-neutral readiness 声明。已发布 headless 子进程 smoke 使用无密钥 adapter 启动真实 Loader profile，执行 `advisor` 工具调用，记录 `advisor/invocation`，并将指导返回给调用 Agent。
+聚焦的顾问和 bundle 测试覆盖路由预检、adapter 失败、第一段流式输出后的取消、空输出、持久化失败结果和 usage、有效 in-history 系统位置、作用域提示可见性、实时启用状态移除和恢复工具及提示词区段、bundle 行和依赖声明。`llm-mock-server` 不提供客户端在第一段流式输出后取消的场景，因此该取消路径使用 `MidStreamAbortAdapter`。DeepSeek adapter 路径使用 `llm-mock-server` 证明 advisor 历史中最后一条 assistant 工具调用会序列化为 OpenAI 兼容的 assistant `tool_calls` 消息及空内容；这只是 DeepSeek adapter 路径的证据，并非 provider-neutral readiness 声明。已发布 headless 子进程 smoke 使用无密钥 adapter 启动真实 Loader profile，执行 `advisor` 工具调用，记录 `advisor/invocation`，并将指导返回给调用 Agent。
 
 Task 3 的内存组合检查不满足产品可见插件的包策略；本次变更添加真实 Loader/app-process 覆盖。Task 5 记录了两个与顾问代码无关但仍存在的 Windows symlink gate 阻碍：`verify-node-next-types` 在 TypeScript 前因 `symlinkSync` 报告 `EPERM: operation not permitted` 而失败；Git mode `120000` 的 `apps/cli/tests/profiles/acp/cordis.yml` 被物化为字面目标 `../../../../../snapshots/acp/escalation-approved/cordis.yml`，使 `verify-cordis-config` 报告 YAML 根不是 entry array。当前 verifier 运行复现了后一诊断。不会修改 checkout symlink 路径以隐藏任一环境失败。
 

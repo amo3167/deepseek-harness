@@ -7,7 +7,9 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
-import type {} from '@deepseek-ai/dsh-advisor'
+import { ADVISOR_SETTINGS_NAMESPACE } from '@deepseek-ai/dsh-advisor'
+import type { AdvisorConfigOptions } from '@deepseek-ai/dsh-advisor'
+import type {} from '@deepseek-ai/dsh-settings'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-util-values'
 import z from '@deepseek-ai/schemastery'
@@ -48,45 +50,67 @@ function outputValueText(values: JsonValue[]): string {
 export function apply(ctx: Context, config: Config = {}): void {
   const toolName = config.toolName ?? 'advisor'
 
-  ctx.tools.register(defineTool({
-    name: toolName,
-    description: ADVISOR_TOOL_DESCRIPTION,
-    parameters: {},
-    output: {
-      schema: {
-        type: 'object',
-        additionalProperties: false,
-        properties: {
-          guidance: { type: 'array', required: true, items: { type: 'json' } },
-          provider: { type: 'string', required: true },
-          model: { type: 'string', required: true },
-        },
-      },
-      render: (_args, value) => [{
-        type: 'text',
-        text: outputValueText(value.guidance),
-      }],
-    },
-    isConcurrencySafe: () => true,
-    async execute(_args, exec) {
-      const agent = exec.agent
-      if (!agent) throw new Error('the advisor tool requires a calling agent (exec.agent was undefined)')
-      const guidance = await ctx.advisors.consult({ agent, signal: exec.signal })
-      return {
-        guidance: guidance.guidance as unknown as JsonValue[],
-        provider: guidance.route.provider,
-        model: guidance.route.model,
-      }
-    },
-  }))
+  ctx.effect(() => {
+    let disposeRegistration: (() => void) | undefined
+    const reconcile = (enabled: boolean) => {
+      disposeRegistration?.()
+      disposeRegistration = undefined
+      if (!enabled) return
 
-  if (config.promptSection !== false) {
-    ctx.systemPrompt.section({
-      name: `tool:${toolName}`,
-      order: ctx.systemPrompt.getSectionOrder('TOOL_ADVISOR'),
-      text: context => ctx.tools.get(toolName, context.scope) === undefined
-        ? ''
-        : advisorPromptSection(toolName),
+      const disposeTool = ctx.tools.register(defineTool({
+        name: toolName,
+        description: ADVISOR_TOOL_DESCRIPTION,
+        parameters: {},
+        output: {
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              guidance: { type: 'array', required: true, items: { type: 'json' } },
+              provider: { type: 'string', required: true },
+              model: { type: 'string', required: true },
+            },
+          },
+          render: (_args, value) => [{
+            type: 'text',
+            text: outputValueText(value.guidance),
+          }],
+        },
+        isConcurrencySafe: () => true,
+        async execute(_args, exec) {
+          const agent = exec.agent
+          if (!agent) throw new Error('the advisor tool requires a calling agent (exec.agent was undefined)')
+          const guidance = await ctx.advisors.consult({ agent, signal: exec.signal })
+          return {
+            guidance: guidance.guidance as unknown as JsonValue[],
+            provider: guidance.route.provider,
+            model: guidance.route.model,
+          }
+        },
+      }))
+      const disposePrompt = config.promptSection === false
+        ? undefined
+        : ctx.systemPrompt.section({
+          name: `tool:${toolName}`,
+          order: ctx.systemPrompt.getSectionOrder('TOOL_ADVISOR'),
+          text: context => ctx.tools.get(toolName, context.scope) === undefined
+            ? ''
+            : advisorPromptSection(toolName),
+        })
+      disposeRegistration = () => {
+        disposePrompt?.()
+        disposeTool()
+      }
+    }
+
+    reconcile(ctx.advisors.isEnabled())
+    const disposeWatcher = ctx.on('settings/updated', (ns, next) => {
+      if (ns !== ADVISOR_SETTINGS_NAMESPACE) return
+      reconcile((next as AdvisorConfigOptions).enabled)
     })
-  }
+    return () => {
+      disposeWatcher()
+      disposeRegistration?.()
+    }
+  }, 'tool-advisor: enabled registration')
 }
