@@ -2,7 +2,7 @@
 
 [English](github-review.md) | 中文
 
-此可选 overlay 会为 `dsh web` 增加一个签名 GitHub 端点。当已配置仓库中的 pull request 从 draft 变为 ready for review 时，规则会在该仓库的 Web Workspace 下创建带标题的根 Session，并启动只读评审提示词。
+此可选 overlay 会为 `dsh web` 增加一个签名 GitHub 端点。当已配置仓库中的 pull request 从 draft 变为 ready for review 时，规则会在该仓库的 Web Workspace 下创建带标题的根 Session，并针对 checkout 的工作树启动自动代码评审，受 read-only 权限 preset 约束。
 
 ## 前置条件
 
@@ -35,7 +35,7 @@ pnpm dsh web --patch apps/cli/config/examples/github-review/cordis.yml
 dsh web --patch /absolute/path/to/github-review/cordis.yml
 ```
 
-对于永久 profile，把 `github-ready-review-rule.mjs` 放在 `$DSH_HOME/profiles/web/cordis.patch.yml` 旁边，把 `cordis.yml` 中的行追加到该 patch，然后运行 `dsh web`。随附 CLI 已经包含两个 webhook 包；只需 overlay 即可激活它们。
+对于永久 profile，把 `cordis.yml` 中的行追加到 `$DSH_HOME/profiles/web/cordis.patch.yml`，然后运行 `dsh web`。每一行都引用已发布的包名，无需移动任何其他文件；只需 overlay 即可激活该接线。
 
 ## 暴露专用端点
 
@@ -65,35 +65,28 @@ Active:       yes
 
 ## 规则行为
 
-规则只接受来源 `primary-github`、仓库 `deepseek-harness/deepseek-harness`、事件 `pull_request` 与动作 `ready_for_review`。它会把精确 head SHA 和选定 PR 字段传给评审提示词，把 JSON 标为不受信任的元数据，并禁止修改文件、分支、PR 或 GitHub 状态。
+规则即 `@deepseek-ai/dsh-webhook-code-review`。overlay 的配置只接受来源 `primary-github`、事件 `pull_request` 与动作 `ready_for_review`，并把仓库 `deepseek-harness/deepseek-harness` 映射到本地 checkout。匹配交付会创建一个 Session，其提示词是共享的 `dsh-code-review` 提示词加上一条固定指令：只评审工作树（`git status --short`、`git diff --staged`、`git diff HEAD`）。
 
-Session 请求选择 `standard` agent preset 与 `read-only` permission preset。`workspacePath` 通过 `WorkspaceRegistry.create()` 规范化，因此第一次匹配交付会在 Workspace 不存在时创建它，后续交付会复用它。
+交付 payload 只用于路由（来源、事件、动作、仓库）。评审内容是本地工作树，`read-only` 权限 preset 禁止任何修改。Session 请求选择 `standard` agent preset 与 `read-only` permission preset。`workspacePath` 通过 `WorkspaceRegistry.create()` 规范化，因此第一次匹配交付会在 Workspace 不存在时创建它，后续交付会复用它。
 
 HTTP 响应刻意弱于 Agent 结果：`202` 表示签名与 JSON 已被接受，规则调用已在内存中调度。它不表示此规则已经匹配，也不表示已创建 Session。
 
-## 程序化扩展
+## 规则配置
 
-`run()` 是普通受信任 JavaScript。部署可以在返回 Session 请求前查询内部策略服务：
+规则配置驱动所有触发与路由决策：
 
-```js
-const response = await fetch('https://policy.internal/pr-review', {
-  method: 'POST',
-  headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({ repository: payload.repository.full_name }),
-  signal,
-})
-if (!response.ok || (await response.json()).automaticReview !== true) return null
-```
+| 键 | 含义 | 默认 |
+| --- | --- | --- |
+| `source` | 适配器来源名；仅该来源的交付触发。 | 无（任意来源） |
+| `events` | 触发评审的 GitHub 事件名。 | `pull_request`、`push` |
+| `pullRequestActions` | 触发评审的 `pull_request` 动作。 | `opened`、`synchronize`、`reopened` |
+| `workspaces` | 仓库 `owner/name` 到本地 checkout 绝对路径的映射。 | 空 |
+| `workspacePath` | 仓库未映射时使用的兜底 checkout 路径。 | 无 |
+| `agentPreset` | 评审 Session 的 Agent 组合。 | 必填 |
+| `permissionPreset` | 评审 Session 的沙箱与审批 preset。 | 必填 |
+| `model` | 可选的评审 Session provider 与 model 路由。 | 无 |
 
-它还可以把仓库映射到不同本地路径：
-
-```js
-const workspacePath = {
-  'deepseek-harness/deepseek-harness': '/path/to/deepseek-harness',
-  'deepseek-harness/dsh-sdk': '/path/to/dsh-sdk',
-}[payload.repository.full_name]
-if (workspacePath === undefined) return null
-```
+仓库未映射且未配置兜底路径的交付会被静默接受：不创建 Session，不报错。需要更强策略的部署可以在此包旁边添加自定义规则；webhook runtime 会独立调度每一条匹配的规则。
 
 ## 交付语义
 

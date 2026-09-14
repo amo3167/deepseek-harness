@@ -1,0 +1,44 @@
+{
+  "name": "@deepseek-ai/dsh-webhook-code-review",
+  "description": "GitHub webhook rule that starts an automatic code review of the working tree diff: opens a Session with the deterministic dsh-code-review prompt on matching webhook deliveries",
+  "version": "0.1.5-rc.1",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "directory": "packages/code-review/webhook-code-review"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/types/**/*.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "workspace:^",
+    "@deepseek-ai/dsh-command-code-review": "workspace:^",
+    "@deepseek-ai/dsh-webhook": "workspace:^",
+    "@deepseek-ai/dsh-webhook-github": "workspace:^",
+    "@deepseek-ai/schemastery": "workspace:^"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "workspace:^",
+    "@deepseek-ai/dsh-command-code-review": "workspace:^",
+    "@deepseek-ai/dsh-webhook": "workspace:^",
+    "@deepseek-ai/dsh-webhook-github": "workspace:^",
+    "@deepseek-ai/schemastery": "workspace:^"
+  }
+}

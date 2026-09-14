@@ -170,6 +170,9 @@ importers:
       '@deepseek-ai/dsh-cmdline':
         specifier: workspace:^
         version: link:../../packages/boot/cmdline
+      '@deepseek-ai/dsh-command-code-review':
+        specifier: workspace:^
+        version: link:../../packages/code-review/command-code-review
       '@deepseek-ai/dsh-command-compact':
         specifier: workspace:^
         version: link:../../packages/compaction/command-compact
@@ -329,6 +332,9 @@ importers:
       '@deepseek-ai/dsh-webhook':
         specifier: workspace:^
         version: link:../../packages/webhook/webhook
+      '@deepseek-ai/dsh-webhook-code-review':
+        specifier: workspace:^
+        version: link:../../packages/code-review/webhook-code-review
       '@deepseek-ai/dsh-webhook-github':
         specifier: workspace:^
         version: link:../../packages/webhook/webhook-github
@@ -1440,6 +1446,9 @@ importers:
       '@deepseek-ai/dsh-bash-sandbox':
         specifier: workspace:^
         version: link:../../shell/bash-sandbox
+      '@deepseek-ai/dsh-command-code-review':
+        specifier: workspace:^
+        version: link:../../code-review/command-code-review
       '@deepseek-ai/dsh-command-compact':
         specifier: workspace:^
         version: link:../../compaction/command-compact
@@ -4652,6 +4661,52 @@ importers:
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
+
+  packages/code-review/command-code-review:
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/cordis-plugin-include':
+        specifier: workspace:^
+        version: link:../../../vendor/include
+      '@deepseek-ai/cordis-plugin-loader':
+        specifier: workspace:^
+        version: link:../../../vendor/loader
+      '@deepseek-ai/dsh-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@deepseek-ai/dsh-commands':
+        specifier: workspace:^
+        version: link:../../interaction/commands
+      '@deepseek-ai/dsh-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@deepseek-ai/dsh-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@deepseek-ai/dsh-session':
+        specifier: workspace:^
+        version: link:../../core/session
+
+  packages/code-review/webhook-code-review:
+    dependencies:
+      '@deepseek-ai/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-command-code-review':
+        specifier: workspace:^
+        version: link:../command-code-review
+      '@deepseek-ai/dsh-webhook':
+        specifier: workspace:^
+        version: link:../../webhook/webhook
+      '@deepseek-ai/dsh-webhook-github':
+        specifier: workspace:^
+        version: link:../../webhook/webhook-github
 
   packages/code-runtime/code-runtime:
     devDependencies:
@@ -11062,6 +11117,9 @@ importers:
       '@deepseek-ai/dsh-code-runtime-worker-thread':
         specifier: workspace:^
         version: link:../../packages/code-runtime/code-runtime-worker-thread
+      '@deepseek-ai/dsh-command-code-review':
+        specifier: workspace:^
+        version: link:../../packages/code-review/command-code-review
       '@deepseek-ai/dsh-command-compact':
         specifier: workspace:^
         version: link:../../packages/compaction/command-compact

@@ -155,6 +155,14 @@
         headChars: 4096
         tailChars: 1024
 
+# ── code review ─────────────────────────────────────────────────────────────
+
+# Human `/dsh-code-review`: a thin hand-off into the nearest agent step. The
+# command steers a deterministic review prompt + optional free-form scope so
+# the model's reply is the review. No domain service, no projection.
+- id: command-code-review
+  name: '@deepseek-ai/dsh-command-code-review'
+
 # ── delegation and workflows ────────────────────────────────────────────────
 
 # The `subagents` registry and its spawn/fork backends live in the HOST
