@@ -2,7 +2,13 @@
 import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterEach, expect, it, onTestFailed } from 'vitest'
+// These imports carry the Context merges used by the composition assertions below.
+import type {} from '@deepseek-ai/dsh-advisor'
+import type {} from '@deepseek-ai/dsh-agent-presets'
 import { SessionId } from '@deepseek-ai/dsh-session'
+import type {} from '@deepseek-ai/dsh-settings'
+import type {} from '@deepseek-ai/dsh-system-prompt'
+import type {} from '@deepseek-ai/dsh-tools'
 import { launchWebScaffold, type WebScaffold } from './scaffold.ts'
 import { connectFreshWorkspace, newEnglishPage, saveFailureShot, writeComposerDraft } from './support.ts'
 
