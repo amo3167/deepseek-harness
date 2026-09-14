@@ -2,16 +2,16 @@
   - treeitem "{{workspace}}" [expanded]:
     - img
     - text: {{workspace}}
-  - treeitem "Review deepseek-harness/deepseek-harness#314 Session actions for Review deepseek-harness/deepseek-harness#314" [selected]:
-    - text: Review deepseek-harness/deepseek-harness#314
-    - button "Session actions for Review deepseek-harness/deepseek-harness#314":
+  - treeitem "Code review deepseek-harness/deepseek-harness PR ready_for_review Session actions for Code review deepseek-harness/deepseek-harness PR ready_for_review" [selected]:
+    - text: Code review deepseek-harness/deepseek-harness PR ready_for_review
+    - button "Session actions for Code review deepseek-harness/deepseek-harness PR ready_for_review":
       - img
 
 ---
 
 - banner:
   - navigation "Session hierarchy":
-    - button "Review deepseek-harness/deepseek-harness#314" [disabled]
+    - button "Code review deepseek-harness/deepseek-harness PR ready_for_review" [disabled]
   - img
   - text: Standard mode
   - button "More actions":

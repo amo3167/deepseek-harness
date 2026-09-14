@@ -1,4 +1,4 @@
-/** Keyless assembled-Web evidence for GitHub ready-for-review Session creation. */
+/** Keyless assembled-Web evidence for GitHub ready-for-review code-review Session creation. */
 
 import { createHmac } from 'node:crypto'
 import { createServer } from 'node:http'
@@ -9,6 +9,8 @@ import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed, onTestFinished, vi } from 'vitest'
 import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
 import { LlmAdapter } from '@deepseek-ai/dsh-llm'
+import { DEFAULT_REVIEW_PROMPT } from '@deepseek-ai/dsh-command-code-review'
+import { AUTO_REVIEW_SURFACE_PROMPT } from '@deepseek-ai/dsh-webhook-code-review'
 import type {} from '@deepseek-ai/dsh-webhook'
 import {
   captureExpandedTurnProcessAria,
@@ -30,7 +32,7 @@ const EXPANDED_EXPECTED = fileURLToPath(
 const PROVIDER = 'github-webhook-review-test'
 const MODEL = 'reply'
 const SECRET = 'github-webhook-review-secret'
-const TITLE = 'Review deepseek-harness/deepseek-harness#314'
+const TITLE = 'Code review deepseek-harness/deepseek-harness PR ready_for_review'
 const REPLY = 'Review complete: no actionable findings.'
 
 /** Deterministic model response for the webhook-created Session. */
@@ -144,7 +146,7 @@ describe.skipIf(MODE === 'record')('web e2e: GitHub ready-for-review', () => {
     const off = scaffold.ctx.on('session/event', (session, event) => {
       if (event.type === 'user/message' && event.data.source.kind === 'webhook'
         && event.data.source.provider === 'github' && event.data.source.source === 'primary-github'
-        && event.data.source.deliveryId === 'ready' && event.data.source.ruleId === 'review-pr-when-ready') reviewSession = session.id
+        && event.data.source.deliveryId === 'ready' && event.data.source.ruleId === 'code-review-auto') reviewSession = session.id
       if (event.type === 'turn/end' && session.id === reviewSession) completed.resolve(undefined)
     })
     const entered = Promise.withResolvers<undefined>()
@@ -184,7 +186,8 @@ describe.skipIf(MODE === 'record')('web e2e: GitHub ready-for-review', () => {
     const [content] = webhookMessage?.content ?? []
     expect(content?.type).toBe('text')
     if (content?.type !== 'text') throw new Error('webhook prompt was not text')
-    expect(content.text).toContain('exact head SHA bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')
+    expect(content.text).toContain(DEFAULT_REVIEW_PROMPT)
+    expect(content.text).toContain(AUTO_REVIEW_SURFACE_PROMPT)
 
     const workspaceRow = page.locator('[role="treeitem"]').first()
     if (await workspaceRow.getAttribute('aria-expanded') !== 'true') await workspaceRow.click()

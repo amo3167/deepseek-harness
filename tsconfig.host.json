@@ -280,6 +280,8 @@
     { "path": "./packages/advisor/advisor" },
     { "path": "./packages/advisor/tool-advisor" },
     { "path": "./packages/compaction/command-compact" },
+    { "path": "./packages/code-review/command-code-review" },
+    { "path": "./packages/code-review/webhook-code-review" },
     { "path": "./packages/compaction/compaction-tool-result-pruner" },
     { "path": "./packages/web/web" },
     { "path": "./packages/web/web-search-exa" },

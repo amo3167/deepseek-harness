@@ -2,7 +2,7 @@
 
 English | [中文](github-review.zh.md)
 
-This opt-in overlay adds a signed GitHub endpoint to `dsh web`. When a pull request in the configured repository changes from draft to ready for review, the rule creates a titled root Session under the repository's Web Workspace and starts a read-only review prompt.
+This opt-in overlay adds a signed GitHub endpoint to `dsh web`. When a pull request in the configured repository changes from draft to ready for review, the rule creates a titled root Session under the repository's Web Workspace and starts the automatic code review of the checkout's working tree, constrained by the read-only permission preset.
 
 ## Prerequisites
 
@@ -35,7 +35,7 @@ An installed DSH uses the same overlay through an absolute path:
 dsh web --patch /absolute/path/to/github-review/cordis.yml
 ```
 
-For a permanent profile, place `github-ready-review-rule.mjs` beside `$DSH_HOME/profiles/web/cordis.patch.yml`, append the rows from `cordis.yml` to that patch, and start with `dsh web`. The shipped CLI already contains both webhook packages; the overlay alone activates them.
+For a permanent profile, append the rows from `cordis.yml` to `$DSH_HOME/profiles/web/cordis.patch.yml` and start with `dsh web`. Every row references a shipped package name, so nothing else needs to move; the overlay alone activates the wiring.
 
 ## Expose the dedicated endpoint
 
@@ -65,35 +65,28 @@ Active:       yes
 
 ## Rule behavior
 
-The rule accepts only source `primary-github`, repository `deepseek-harness/deepseek-harness`, event `pull_request`, and action `ready_for_review`. It passes the exact head SHA plus selected PR fields to the review prompt, labeling the JSON as untrusted metadata and forbidding file, branch, PR, or GitHub mutation.
+The rule is `@deepseek-ai/dsh-webhook-code-review`. The overlay's config accepts only source `primary-github`, event `pull_request`, and action `ready_for_review`, and maps repository `deepseek-harness/deepseek-harness` to the local checkout. Matching deliveries create one Session whose prompt is the shared `dsh-code-review` prompt plus a fixed instruction to review exactly the working tree: `git status --short`, `git diff --staged`, `git diff HEAD`.
 
-The Session request selects the `standard` agent preset and `read-only` permission preset. `workspacePath` is canonicalized through `WorkspaceRegistry.create()`, so the first matching delivery creates the Web Workspace when absent and later deliveries reuse it.
+The delivery payload is used for routing only (source, event, action, repository). The review content is the local working tree, and the `read-only` permission preset forbids mutation. The Session request selects the `standard` agent preset and `read-only` permission preset. `workspacePath` is canonicalized through `WorkspaceRegistry.create()`, so the first matching delivery creates the Web Workspace when absent and later deliveries reuse it.
 
 The HTTP response is intentionally weaker than the Agent outcome: `202` means the signature and JSON were accepted and rule calls were scheduled in memory. It does not mean this rule matched or that a Session was created.
 
-## Programmatic extensions
+## Rule configuration
 
-`run()` is ordinary trusted JavaScript. A deployment can query an internal policy service before returning a Session request:
+The rule config drives every trigger and routing decision:
 
-```js
-const response = await fetch('https://policy.internal/pr-review', {
-  method: 'POST',
-  headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({ repository: payload.repository.full_name }),
-  signal,
-})
-if (!response.ok || (await response.json()).automaticReview !== true) return null
-```
+| Key | Meaning | Default |
+| --- | --- | --- |
+| `source` | Adapter source name; only deliveries from this source trigger. | none (any source) |
+| `events` | GitHub event names that trigger a review. | `pull_request`, `push` |
+| `pullRequestActions` | `pull_request` actions that trigger a review. | `opened`, `synchronize`, `reopened` |
+| `workspaces` | Repository `owner/name` to absolute checkout path. | empty |
+| `workspacePath` | Fallback checkout path when the repository is unmapped. | none |
+| `agentPreset` | Agent composition of the review Session. | required |
+| `permissionPreset` | Sandbox and approval preset of the review Session. | required |
+| `model` | Optional provider and model route for the review Session. | none |
 
-It can also map repositories to different local paths:
-
-```js
-const workspacePath = {
-  'deepseek-harness/deepseek-harness': '/path/to/deepseek-harness',
-  'deepseek-harness/dsh-sdk': '/path/to/dsh-sdk',
-}[payload.repository.full_name]
-if (workspacePath === undefined) return null
-```
+Deliveries whose repository maps to no path (and no fallback is set) are accepted silently: no Session, no error. A deployment that needs richer policy can add a custom rule next to this package; the webhook runtime dispatches every matching rule independently.
 
 ## Delivery semantics
 

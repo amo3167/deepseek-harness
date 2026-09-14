@@ -3430,6 +3430,43 @@ export interface Config {
 
 来源：[`packages/web/web-search-perplexity/src/index.ts:30`](../packages/web/web-search-perplexity/src/index.ts)
 
+<a id="deepseek-aidsh-webhook-code-review"></a>
+
+## `@deepseek-ai/dsh-webhook-code-review`
+
+需要：`webhookRuntime`
+
+```ts config-catalog
+/** Webhook rule plugin config. */
+export interface Config {
+  /** Adapter source name; when set, only deliveries from that source trigger. */
+  source?: string
+  /** GitHub event names that trigger a review (default: `pull_request` and `push`). */
+  events?: string[]
+  /** `pull_request` actions that trigger a review (default: `opened`, `synchronize`, `reopened`). */
+  pullRequestActions?: string[]
+  /** Absolute workspace directory used when the delivery's repository has no `workspaces` entry. */
+  workspacePath?: string
+  /** Repository `owner/name` to absolute workspace directory overrides. */
+  workspaces?: Record<string, string>
+  /** Agent composition mounted before the review Session is published. */
+  agentPreset: string
+  /** Sandbox and approval preset admitted before the review prompt. */
+  permissionPreset: string
+  /** Optional explicit model route for the review Session. */
+  model?: {
+    /** Registered provider route. */
+    provider: string
+    /** Provider-owned model id. */
+    model: string
+    /** Optional positive output-token cap. */
+    maxTokens?: number
+  }
+}
+```
+
+来源：[`packages/code-review/webhook-code-review/src/index.ts:33`](../packages/code-review/webhook-code-review/src/index.ts)
+
 <a id="deepseek-aidsh-webhook-github"></a>
 
 ## `@deepseek-ai/dsh-webhook-github`
@@ -3536,6 +3573,7 @@ export interface Config {
 - `@deepseek-ai/dsh-client-ui-user-questions`（[`packages/client/ui-user-questions/src/index.ts`](../packages/client/ui-user-questions/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-workflow-run`（[`packages/client/ui-workflow-run/src/index.ts`](../packages/client/ui-workflow-run/src/index.ts)）
 - `@deepseek-ai/dsh-client-ui-workspace`（[`packages/client/ui-workspace/src/index.ts`](../packages/client/ui-workspace/src/index.ts)）
+- `@deepseek-ai/dsh-command-code-review` — 需要 `commands`（[`packages/code-review/command-code-review/src/index.ts`](../packages/code-review/command-code-review/src/index.ts)）
 - `@deepseek-ai/dsh-command-compact` — 需要 `commands` · `compact`（[`packages/compaction/command-compact/src/index.ts`](../packages/compaction/command-compact/src/index.ts)）
 - `@deepseek-ai/dsh-command-feedback` — 需要 `commands`（[`packages/feedback/command-feedback/src/index.ts`](../packages/feedback/command-feedback/src/index.ts)）
 - `@deepseek-ai/dsh-command-goal` — 需要 `commands` · `goals`（[`packages/goal/command-goal/src/index.ts`](../packages/goal/command-goal/src/index.ts)）

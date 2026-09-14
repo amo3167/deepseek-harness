@@ -1,16 +1,29 @@
-# Opt-in GitHub webhook overlay over the shipped Web composition. The second
-# WebServer lives in an isolated realm so exposing it never exposes the UI API.
-
+# Opt-in overlay: signed GitHub webhook ingress for automatic code review.
+#
+# Mounts the generic webhook runtime, the dedicated code-review rule
+# (`@deepseek-ai/dsh-webhook-code-review`), and a second loopback WebServer
+# that exposes only `POST /github`. Compose with the base Web bundle; the rule
+# reviews the working tree of the mapped local checkout. See the `dsh-webhook`
+# and `dsh-webhook-github` READMEs for signing, credential, and isolation
+# details.
+#
+# Environment:
+#   DSH_GITHUB_WEBHOOK_SECRET    required — the shared signing secret
+#   DSH_GITHUB_WEBHOOK_PORT      optional — ingress port (default 3081)
+#   DSH_GITHUB_REVIEW_WORKSPACE  optional — checkout to review
+#                                (default the host's current directory)
 - insert:
     - id: webhook-runtime
       name: '@deepseek-ai/dsh-webhook'
 
     - id: github-ready-review-rule
-      name: './github-ready-review-rule.mjs'
+      name: '@deepseek-ai/dsh-webhook-code-review'
       config:
         source: primary-github
-        repository: deepseek-harness/deepseek-harness
-        workspacePath: !!js process.env.DSH_GITHUB_REVIEW_WORKSPACE ?? process.cwd()
+        events: [pull_request]
+        pullRequestActions: [ready_for_review]
+        workspaces:
+          deepseek-harness/deepseek-harness: !!js process.env.DSH_GITHUB_REVIEW_WORKSPACE ?? process.cwd()
         agentPreset: standard
         permissionPreset: read-only
 
@@ -20,13 +33,13 @@
       isolate:
         webServer: true
       config:
-        - id: github-webhook-server
+        - id: github-webhook-host
           name: '@deepseek-ai/dsh-host-webserver'
           config:
             host: '127.0.0.1'
-            port: !!js Number(process.env.DSH_GITHUB_WEBHOOK_PORT ?? 3081)
+            port: !!js Number(process.env.DSH_GITHUB_WEBHOOK_PORT || 3081)
 
-        - id: github-webhook-adapter
+        - id: github-webhook-route
           name: '@deepseek-ai/dsh-webhook-github'
           config:
             source: primary-github
