@@ -453,6 +453,18 @@ describe('ConversationRoot resident composer', () => {
     expect(b.slotCalls).toContain('conversation.session.header.corner')
   })
 
+  it('hero phase: the header corner seat stays reachable so the right sidebar can still be opened', () => {
+    const b = mount(sessionSnapshotOf({ blank: true }))
+    const corner = b.view.container.querySelector('[data-conversation-header-corner]')
+    // Title, lineage, actions and tabs stay hidden; only the corner seat is rendered.
+    expect(b.slotCalls).toContain('conversation.session.header.corner')
+    expect(b.slotCalls).not.toContain('conversation.session.header.lineage')
+    expect(b.slotCalls).not.toContain('conversation.session.header.actions')
+    expect(corner).not.toBeNull()
+    // Outside the hidden header: an aria-hidden ancestor would hide a focusable button from assistive tech.
+    expect(corner?.closest('[aria-hidden="true"]')).toBeNull()
+  })
+
   it('sticky composer seat wraps the whole overlay chain, not only the fallback stack', () => {
     const b = mount(sessionSnapshotOf(), undefined, undefined, { overlayTakeover: true })
     const seat = b.view.container.querySelector('[data-composer-seat]')
